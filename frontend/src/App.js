@@ -1,65 +1,38 @@
+// frontend/src/App.js
 import React, { useEffect, useState } from "react";
+import SessionPopup from "./components/SessionPopup";
+import MainLayout from "./components/MainLayout";
 import axios from "axios";
+import "./App.css";
 
 function App() {
+  const [session, setSession] = useState(null);
   const [events, setEvents] = useState([]);
 
-  // Fetch initial events from backend
   useEffect(() => {
+    if (!session || session.isNewSession) return;
     axios
-      .get("http://localhost:5000/api/events")
+      .get(`http://localhost:5000/api/events?session=${session._id}`)
       .then((res) => setEvents(res.data))
-      .catch((err) => console.error("Failed to fetch events:", err));
-  }, []);
+      .catch((err) => console.error("Error loading past events:", err));
+  }, [session]);
 
-  // WebSocket for real-time updates
   useEffect(() => {
+    if (!session || !session.isNewSession) return;
     const ws = new WebSocket("ws://localhost:5000");
-
-    ws.onopen = () => {
-      console.log("📡 WebSocket connected");
-    };
-
     ws.onmessage = (event) => {
       const newEvent = JSON.parse(event.data);
-      setEvents((prevEvents) => [newEvent, ...prevEvents]);
+      if (newEvent.session === session._id) {
+        setEvents((prev) => [newEvent, ...prev]);
+      }
     };
-
-    ws.onclose = () => {
-      console.log("🔌 WebSocket disconnected");
-    };
-
-    ws.onerror = (err) => {
-      console.error("❌ WebSocket error:", err);
-    };
-
+    ws.onerror = (err) => console.error("WebSocket error:", err);
     return () => ws.close();
-  }, []);
+  }, [session]);
 
-  return (
-    <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
-      <h1>Capabilities2 Event Viewer</h1>
-      <p>Live updates from <code>foxglove-rosbridge</code> via WebSocket</p>
-      <ul style={{ listStyle: "none", padding: 0 }}>
-        {events.map((event) => (
-          <li
-            key={event._id}
-            style={{
-              marginBottom: "10px",
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "5px",
-              background: "#f9f9f9",
-            }}
-          >
-            <strong>{event.origin_node}</strong> → {event.content}  
-            <br />
-            <small>PID: {event.pid} | Thread: {event.thread_id} | Type: {event.type}</small>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+  if (!session) return <SessionPopup onSelect={setSession} />;
+
+  return <MainLayout session={session} events={events} />;
 }
 
 export default App;

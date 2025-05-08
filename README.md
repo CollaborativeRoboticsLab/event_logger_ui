@@ -1,6 +1,6 @@
 # Capabilities2 UI
 
-A Node.js + React-based web application that connects to [`foxglove-rosbridge`](https://github.com/foxglove/foxglove-bridge) and visualizes `/events` messages published in ROS2 using the CDR encoding format.
+A Node.js + React-based web application that connects to [`foxglove-rosbridge`](https://github.com/foxglove/ros-foxglove-bridge) and visualizes `/events` messages published in ROS2 using the CDR encoding format.
 
 This app allows:
 - Live real-time visualization of capability events
@@ -15,7 +15,7 @@ This app allows:
 
 - Node.js ≥ 18.x
 - MongoDB (running locally or via Atlas)
-- ROS2 Capabilities2 system publishing to `/events` via [foxglove-bridge](https://github.com/foxglove/foxglove-bridge)
+- ROS2 Capabilities2 system publishing to `/events` via [foxglove-bridge](https://github.com/foxglove/ros-foxglove-bridge)
 
 ### 2. Clone and Setup
 

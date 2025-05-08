@@ -1,0 +1,30 @@
+.panel-toggle-vertical {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 16px;
+    background-color: #ccc;
+    color: #333;
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
+    line-height: 100vh;
+    cursor: pointer;
+    user-select: none;
+    z-index: 1001;
+    border-left: 1px solid #999;
+    transition: left 0.3s ease, background 0.2s;
+  }
+  
+  .panel-toggle-vertical:hover {
+    background-color: #bbb;
+  }
+  
+  .panel-toggle-vertical.open {
+    left: 25%;
+  }
+  
+  .panel-toggle-vertical.closed {
+    left: 0;
+  }
+  
