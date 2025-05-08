@@ -1,0 +1,24 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@foxglove/cdr": "^3.3.0",
+    "@foxglove/rosmsg": "^5.0.4",
+    "@foxglove/ws-protocol": "^0.8.0",
+    "cors": "^2.8.5",
+    "debug": "^4.4.0",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "mongoose": "^8.14.1",
+    "protobufjs": "^7.4.0",
+    "ws": "^8.18.2"
+  }
+}
