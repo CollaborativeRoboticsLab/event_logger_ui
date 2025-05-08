@@ -4,15 +4,19 @@ const cors = require("cors");
 const http = require("http");
 const WebSocket = require("ws");
 const { startFoxgloveClient } = require("./foxgloveClient");
+
 const eventRoutes = require("./routes/events");
-const Event = require("./models/Event");
+const sessionRoutes = require("./routes/sessions");
 
 require("dotenv").config();
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
+
 app.use("/api/events", eventRoutes);
+app.use("/api/sessions", sessionRoutes);
 
 // HTTP + WebSocket server
 const server = http.createServer(app);

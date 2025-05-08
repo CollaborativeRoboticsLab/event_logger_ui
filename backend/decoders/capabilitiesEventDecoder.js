@@ -1,11 +1,24 @@
 const { CdrReader } = require("@foxglove/cdr");
 
-/**
- * Decode /capabilities2/events (CDR format)
- */
+// Enum lookup maps
+const EVENT_ENUM_MAP = {
+  0: "IDLE",
+  1: "STARTED",
+  2: "STOPPED",
+  3: "FAILED",
+  4: "SUCCEEDED",
+  5: "UNDEFINED",
+};
+
+const TYPE_ENUM_MAP = {
+  0: "INFO",
+  1: "DEBUG",
+  2: "ERROR",
+  3: "ERROR_ELEMENT",
+};
+
 function decodeCapabilityEvent(data) {
   const reader = new CdrReader(data);
-
   try {
     const header = {
       stamp: {
@@ -30,8 +43,10 @@ function decodeCapabilityEvent(data) {
     };
 
     const thread_id = reader.int8();
-    const event = reader.uint8();
-    const type = reader.uint8();
+
+    const eventNum = reader.uint8();
+    const typeNum = reader.uint8();
+
     const content = reader.string();
     const pid = reader.int32();
 
@@ -41,13 +56,13 @@ function decodeCapabilityEvent(data) {
       source,
       target,
       thread_id,
-      event,
-      type,
+      event: EVENT_ENUM_MAP[eventNum] || "UNDEFINED",
+      type: TYPE_ENUM_MAP[typeNum] || "INFO",
       content,
       pid,
     };
   } catch (err) {
-    console.error("⚠️ Failed to decode CapabilityEvent:", err.message);
+    console.error("⚠️ Decode error:", err.message);
     return {};
   }
 }

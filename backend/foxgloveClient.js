@@ -1,56 +1,50 @@
+// backend/foxgloveClient.js
 const { FoxgloveClient } = require("@foxglove/ws-protocol");
 const WebSocket = require("ws");
 const Event = require("./models/Event");
 const decoders = require("./decoders");
 
-const deserializers = new Map();
-
-function startFoxgloveClient(onNewEvent) {
+function startFoxgloveClient(sessionId) {
+  console.log("[FoxgloveClient] Starting client for session:", sessionId);
   const client = new FoxgloveClient({
     ws: new WebSocket("ws://0.0.0.0:8765", [FoxgloveClient.SUPPORTED_SUBPROTOCOL]),
   });
 
-  client.on("error", (err) => {
-    console.error("❌ Foxglove WS error:", err.message);
-  });
+  const deserializers = new Map();
 
   client.on("advertise", (channels) => {
+    console.log("[FoxgloveClient] Channels advertised:", channels.map(c => c.topic));
     for (const channel of channels) {
-      const decoder = decoders[channel.topic];
-      if (!decoder) continue; // ⛔ Skip topics without decoders
-
-      if (channel.encoding !== "cdr") {
-        console.warn(`❗ Decoder for ${channel.topic} exists, but encoding is not CDR`);
+      if (channel.topic !== "/capabilities2/events" || channel.encoding !== "cdr") {
+        console.log(`[FoxgloveClient] Skipping channel: ${channel.topic} (${channel.encoding})`);
         continue;
       }
-
-      console.log(`🎯 Subscribing to ${channel.topic} (cdr)`);
-
+      console.log(`[FoxgloveClient] Subscribing to channel: ${channel.topic}`);
       const subId = client.subscribe(channel.id);
+      const decoder = decoders[channel.topic];
+      if (!decoder) {
+        console.warn(`[FoxgloveClient] No decoder found for topic: ${channel.topic}`);
+        continue;
+      }
       deserializers.set(subId, decoder);
     }
   });
 
-  client.on("message", ({ subscriptionId, timestamp, data }) => {
+  client.on("message", ({ subscriptionId, data }) => {
     const decode = deserializers.get(subscriptionId);
-    if (!decode) return;
-
+    if (!decode) {
+      console.warn("[FoxgloveClient] No decoder for subscription:", subscriptionId);
+      return;
+    }
     const msg = decode(data);
-    console.log("📩 Decoded message:", msg);
-
-    const event = new Event(msg);
-    event
-      .save()
-      .then((saved) => {
-        console.log("✅ Event saved");
-        if (onNewEvent) onNewEvent(saved);
-      })
-      .catch((err) => {
-        console.error("❌ Save error:", err.message);
-      });
+    console.log("[FoxgloveClient] Event received:", msg);
+    const event = new Event({ ...msg, session: sessionId });
+    event.save()
+      .then(() => console.log("[FoxgloveClient] Event saved to DB."))
+      .catch((err) => console.error("[FoxgloveClient] Failed to save event:", err.message));
   });
 
-  console.log("🔌 Connecting to Foxglove WebSocket...");
+  console.log("[FoxgloveClient] initialized for session:", sessionId);
 }
 
 module.exports = { startFoxgloveClient };
