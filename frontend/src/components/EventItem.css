@@ -1,0 +1,86 @@
+.event-item {
+    border-bottom: 1px solid #ddd;
+    padding: 6px 0;
+    cursor: pointer;
+  }
+  
+  .event-summary {
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: monospace;
+    white-space: pre-wrap;
+  }
+  
+  .event-summary.info {
+    background-color: #f0f0f0;
+    color: black;
+  }
+  
+  .event-summary.debug {
+    background-color: #fff3e0;
+    color: #8b4513;
+  }
+  
+  .event-summary.error,
+  .event-summary.error_element {
+    background-color: #ffe6e6;
+    color: #b00020;
+  }
+  
+  .event-icon {
+    font-size: 1.2em;
+  }
+  
+  .event-details {
+    padding: 8px 10px;
+    background-color: #fefefe;
+  }
+  
+  .event-details table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .event-details td {
+    border: 1px solid #ccc;
+    padding: 4px 8px;
+    font-size: 0.9em;
+  }
+  
+  /* Final event detail table (formatted rows with fixed column widths) */
+  .event-details-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    table-layout: fixed; /* Helps distribute column width predictably */
+  }
+  
+  .event-details-table td {
+    border: 1px solid #ccc;
+    padding: 4px 8px;
+    font-size: 0.9em;
+    vertical-align: top;
+    overflow-wrap: break-word;
+  }
+  
+  /* Field label column (first cell per row like "Header", "Source") */
+  .event-details-table td:first-child {
+    font-weight: bold;
+    background-color: #f7f7f7;
+    width: 90px;
+  }
+  
+  /* Key labels (e.g., "sec", "provider", etc.) */
+  .event-details-table td:nth-child(2),
+  .event-details-table td:nth-child(4),
+  .event-details-table td:nth-child(6) {
+    width: 80px;
+    font-weight: bold;
+    color: #444;
+    background-color: #fafafa;
+  }
+  
