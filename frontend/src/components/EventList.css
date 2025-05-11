@@ -1,25 +1,85 @@
+.event-list-container {
+  display: flex;
+  height: 100%;
+}
+
+.filter-panel {
+  width: 15%;
+  padding: 10px;
+  border-right: 1px solid #ccc;
+  background-color: #eee;
+  overflow-y: auto;
+}
+
+.filter-group {
+  margin-bottom: 10px;
+}
+
 .event-list {
-    padding: 10px;
-  }
-  
-  .event-item {
-    background: white;
-    border: 1px solid #ccc;
-    margin-bottom: 8px;
-    padding: 8px;
-    cursor: pointer;
-    border-radius: 4px;
-  }
-  
-  .event-summary {
-    font-weight: bold;
-  }
-  
-  .event-details {
-    margin-top: 8px;
-    font-size: 0.85em;
-    background: #f9f9f9;
-    padding: 8px;
-    border-radius: 4px;
-  }
-  
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.event-item {
+  border-bottom: 1px solid #ddd;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+.event-summary {
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: monospace;
+  white-space: pre-wrap;
+}
+
+.event-summary.info {
+  background-color: #f0f0f0;
+  color: black;
+}
+
+.event-summary.debug {
+  background-color: #fff3e0;
+  color: #8b4513;
+}
+
+.event-summary.error,
+.event-summary.error_element {
+  background-color: #ffe6e6;
+  color: #b00020;
+}
+
+.event-icon {
+  font-size: 1.2em;
+}
+
+.event-details table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.event-details td {
+  border: 1px solid #ccc;
+  padding: 4px 8px;
+  font-size: 0.9em;
+}
+
+.filter-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.filter-table td {
+  vertical-align: top;
+  padding: 5px;
+}
+
+.checkbox-column label {
+  display: block;
+  margin-bottom: 4px;
+}

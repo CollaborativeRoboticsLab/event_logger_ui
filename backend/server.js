@@ -1,52 +1,47 @@
 const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
 const http = require("http");
+const cors = require("cors");
+const mongoose = require("mongoose");
 const WebSocket = require("ws");
-const { startFoxgloveClient } = require("./foxgloveClient");
 
-const eventRoutes = require("./routes/events");
 const sessionRoutes = require("./routes/sessions");
-
-require("dotenv").config();
+const eventRoutes = require("./routes/events");
+const { setBroadcast } = require("./foxgloveClient");
+const sanitizeEvent = require("./utils/sanitizeEvent"); // ✅ import
 
 const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/events", eventRoutes);
 app.use("/api/sessions", sessionRoutes);
+app.use("/api/events", eventRoutes);
 
-// HTTP + WebSocket server
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/capabilities2", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
 
-// Broadcast to connected clients
-function broadcast(data) {
+mongoose.connection.once("open", () => {
+  console.log("[Backend] ✅ MongoDB connected");
+});
+
+// ✅ Use the sanitize module
+setBroadcast((event) => {
+  // console.log("📡 [Backend] Received event to broadcast:", event);
+  const sanitized = sanitizeEvent(event);
+  const payload = JSON.stringify(sanitized);
+
   wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(data));
+      client.send(payload);
     }
   });
-}
+});
 
-// Connect to MongoDB
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log("✅ MongoDB connected");
-
-    // Start backend server (HTTP + WS)
-    server.listen(5000, () => console.log("🚀 Server running on port 5000"));
-
-    // Start Foxglove WebSocket client
-    startFoxgloveClient((event) => {
-      // Optional: broadcast to frontend
-      broadcast(event);
-    });
-  })
-  .catch((err) => console.error("❌ DB error:", err));
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`[Backend] 🚀 Server running on port ${PORT}`);
+});
