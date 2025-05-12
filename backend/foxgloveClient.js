@@ -63,7 +63,6 @@ function startFoxgloveClient(sessionId) {
         .save()
         .then((saved) => {
           const sanitized = sanitizeEvent(saved); // ✅ Remove _id, timestamps, etc.
-
           if (broadcastFn) {
             broadcastFn(sanitized);
           }

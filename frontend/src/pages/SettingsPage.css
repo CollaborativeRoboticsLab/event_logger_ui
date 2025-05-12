@@ -1,0 +1,42 @@
+/* SettingsPage.css */
+.settings-page {
+  padding: 20px;
+}
+
+.session-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+.session-table th,
+.session-table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: left;
+}
+
+.session-table th:first-child,
+.session-table td:first-child {
+  width: 40px; /* or even 30px if you want tighter */
+  text-align: center;
+}
+
+.session-table th {
+  background-color: #f2f2f2;
+}
+
+button {
+  padding: 8px 16px;
+  font-weight: bold;
+  background-color: #d9534f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:disabled {
+  background-color: #aaa;
+  cursor: not-allowed;
+}

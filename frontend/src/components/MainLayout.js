@@ -1,6 +1,8 @@
 import React from "react";
+import ResizableLeftPanel from "./ResizableLeftPanel";
+import ResizableBottomPanel from "./ResizableBottomPanel";
 import EventList from "./EventList";
-import ResizablePanel from "./ResizablePanel";
+import "./MainLayout.css";
 
 function MainLayout({ session, events }) {
   const topContent = (
@@ -14,9 +16,12 @@ function MainLayout({ session, events }) {
     </>
   );
 
-  const bottomContent = <EventList events={events} />;
-
-  return <ResizablePanel topContent={topContent} bottomContent={bottomContent} />;
+  return (
+    <div className="main-layout">
+      <ResizableLeftPanel />
+      <ResizableBottomPanel topContent={topContent} bottomContent={<EventList events={events} />} />
+    </div>
+  );
 }
 
 export default MainLayout;

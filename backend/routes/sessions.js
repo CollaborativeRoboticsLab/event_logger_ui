@@ -41,4 +41,22 @@ router.post("/", async (req, res) => {
   }
 });
 
+// POST delete sessions by IDs
+router.post("/delete", async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids)) {
+      return res.status(400).json({ error: "Invalid request format" });
+    }
+
+    await Session.deleteMany({ _id: { $in: ids } });
+    res.status(200).json({ success: true, deleted: ids.length });
+  } catch (err) {
+    console.error("[Session API] ❌ Failed to delete sessions:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
+
 module.exports = router;
