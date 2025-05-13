@@ -15,6 +15,7 @@ const TYPE_ENUM_MAP = {
   1: "DEBUG",
   2: "ERROR",
   3: "ERROR_ELEMENT",
+  4: "DEFINE_EVENT",
 };
 
 function decodeCapabilityEvent(data) {

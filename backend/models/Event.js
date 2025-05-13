@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const EVENT_ENUM = ["IDLE", "STARTED", "STOPPED", "FAILED", "SUCCEEDED", "UNDEFINED"];
-const TYPE_ENUM = ["INFO", "DEBUG", "ERROR", "ERROR_ELEMENT"];
+const TYPE_ENUM = ["INFO", "DEBUG", "ERROR", "ERROR_ELEMENT", "DEFINE_EVENT"];
 
 const eventSchema = new mongoose.Schema({
   header: {

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import EventItem from "./EventItem";
 import "./EventList.css";
 
-const EVENT_TYPES = ["INFO", "DEBUG", "ERROR", "ERROR_ELEMENT"];
+const EVENT_TYPES = ["INFO", "DEBUG", "ERROR", "ERROR_ELEMENT", "DEFINE_EVENT"];
 
 function EventList({ events, disabled = false  }) {
   const [selectedTypes, setSelectedTypes] = useState(EVENT_TYPES);
@@ -18,11 +18,21 @@ function EventList({ events, disabled = false  }) {
   };
 
   const filteredEvents = useMemo(() => {
-    return events.filter(
-      (e) =>
-        selectedTypes.includes(e.type) &&
-        (!selectedOrigin || e.origin_node === selectedOrigin)
-    );
+    return events
+      .filter(
+        (e) =>
+          selectedTypes.includes(e.type) &&
+          (!selectedOrigin || e.origin_node === selectedOrigin)
+      )
+      .sort((a, b) => {
+        const aSec = a.header?.stamp?.sec ?? 0;
+        const aNano = a.header?.stamp?.nanosec ?? 0;
+        const bSec = b.header?.stamp?.sec ?? 0;
+        const bNano = b.header?.stamp?.nanosec ?? 0;
+  
+        if (aSec !== bSec) return bSec - aSec; // newest first
+        return bNano - aNano;
+      });
   }, [events, selectedTypes, selectedOrigin]);
 
   const handleItemClick = (id) => {

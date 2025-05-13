@@ -24,14 +24,51 @@ function generateEventSummary(msg) {
     const target = msg.target?.capability || "";
     const threadId = msg.thread_id;
     const content = msg.content || "";
+    const event = msg.event;
 
-    if (msg.type === "ERROR_ELEMENT") return `[${origin}][${source}/${threadId}] ${content}`;
-    if (threadId >= 0 && !target && !source) return `[${origin}][${threadId}] ${content}`;
-    if (threadId < 0 && !target && !source) return `[${origin}] ${content}`;
-    if (threadId >= 0 && !target && source) return `[${origin}][${source}/${threadId}] ${content}`;
-    if (threadId < 0 && !target && source) return `[${origin}][${source}] ${content}`;
-    if (threadId >= 0 && target) return `[${origin}][${source}/${threadId}] triggering ${target} ${content}`;
-    if (threadId < 0 && target) return `[${origin}][${source}] triggering ${target} ${content}`;
+    if (msg.type === "ERROR_ELEMENT") {
+        return `[${origin}][${source}/${threadId}] ${content}`;
+    }
+
+    if (msg.type === "DEFINE_EVENT" && event === "STARTED") {
+        return `[${origin}][${source}] will trigger [${target}] on start`;
+    }
+
+    if (msg.type === "DEFINE_EVENT" && event === "STOPPED") {
+        return `[${origin}][${source}] will trigger [${target}] on stop`;
+    }
+
+    if (msg.type === "DEFINE_EVENT" && event === "FAILED") {
+        return `[${origin}][${source}] will trigger [${target}] on failure`;
+    }
+
+    if (msg.type === "DEFINE_EVENT" && event === "SUCCEEDED") {
+        return `[${origin}][${source}] will trigger [${target}] on success`;
+    }
+
+    if (threadId >= 0 && !target && !source) {
+        return `[${origin}][${threadId}] ${content}`;
+    }
+
+    if (threadId < 0 && !target && !source) {
+        return `[${origin}] ${content}`;
+    }
+
+    if (threadId >= 0 && !target && source) {
+        return `[${origin}][${source}/${threadId}] ${content}`;
+    }
+
+    if (threadId < 0 && !target && source) {
+        return `[${origin}][${source}] ${content}`;
+    }
+
+    if (threadId >= 0 && target) {
+        return `[${origin}][${source}/${threadId}] triggering ${target} ${content}`;
+    }
+
+    if (threadId < 0 && target) {
+        return `[${origin}][${source}] triggering ${target} ${content}`;
+    }
 
     return `[${origin}] ${content}`;
 }
