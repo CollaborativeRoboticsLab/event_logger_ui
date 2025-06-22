@@ -8,11 +8,17 @@ function typeToLabel(type) {
 function getEventIcon(type) {
     switch (type) {
         case "ERROR":
+            return "❌  ";
         case "ERROR_ELEMENT":
             return "❌  ";
         case "DEBUG":
             return "🛠️  ";
         case "INFO":
+            return "ℹ️  ";
+        case "RUNNER_DEFINE":
+            return "🔧  ";
+        case "RUNNER_EVENT":
+            return "🔄  ";
         default:
             return "ℹ️  ";
     }
@@ -30,20 +36,52 @@ function generateEventSummary(msg) {
         return `[${origin}][${source}/${threadId}] ${content}`;
     }
 
-    if (msg.type === "DEFINE_EVENT" && event === "STARTED") {
+    if (msg.type === "RUNNER_DEFINE" && event === "STARTED") {
         return `[${origin}][${source}] will trigger [${target}] on start`;
     }
 
-    if (msg.type === "DEFINE_EVENT" && event === "STOPPED") {
+    if (msg.type === "RUNNER_DEFINE" && event === "STOPPED") {
         return `[${origin}][${source}] will trigger [${target}] on stop`;
     }
 
-    if (msg.type === "DEFINE_EVENT" && event === "FAILED") {
+    if (msg.type === "RUNNER_DEFINE" && event === "FAILED") {
         return `[${origin}][${source}] will trigger [${target}] on failure`;
     }
 
-    if (msg.type === "DEFINE_EVENT" && event === "SUCCEEDED") {
+    if (msg.type === "RUNNER_DEFINE" && event === "SUCCEEDED") {
         return `[${origin}][${source}] will trigger [${target}] on success`;
+    }
+
+    if (threadId >= 0 && msg.type === "RUNNER_EVENT" && event === "STARTED") {
+        return `[${origin}][${source}][${threadId}] triggering [${target}] on start`;
+    }
+
+    if (threadId < 0 && msg.type === "RUNNER_EVENT" && event === "STARTED") {
+        return `[${origin}][${source}] triggering [${target}] on start`;
+    }
+
+    if (threadId >= 0 && msg.type === "RUNNER_EVENT" && event === "STOPPED") {
+        return `[${origin}][${source}][${threadId}] triggering [${target}] on stop`;
+    }
+
+    if (threadId < 0 && msg.type === "RUNNER_EVENT" && event === "STOPPED") {
+        return `[${origin}][${source}] triggering [${target}] on stop`;
+    }
+
+    if (threadId >= 0 && msg.type === "RUNNER_EVENT" && event === "FAILED") {
+        return `[${origin}][${source}][${threadId}] triggering [${target}] on failure`;
+    }
+
+    if (threadId < 0 && msg.type === "RUNNER_EVENT" && event === "FAILED") {
+        return `[${origin}][${source}] triggering [${target}] on failure`;
+    }
+
+    if (threadId >= 0 && msg.type === "RUNNER_EVENT" && event === "SUCCEEDED") {
+        return `[${origin}][${source}][${threadId}] triggering [${target}] on success`;
+    }
+
+    if (threadId < 0 && msg.type === "RUNNER_EVENT" && event === "SUCCEEDED") {
+        return `[${origin}][${source}] triggering [${target}] on success`;
     }
 
     if (threadId >= 0 && !target && !source) {
@@ -60,14 +98,6 @@ function generateEventSummary(msg) {
 
     if (threadId < 0 && !target && source) {
         return `[${origin}][${source}] ${content}`;
-    }
-
-    if (threadId >= 0 && target) {
-        return `[${origin}][${source}/${threadId}] triggering ${target} ${content}`;
-    }
-
-    if (threadId < 0 && target) {
-        return `[${origin}][${source}] triggering ${target} ${content}`;
     }
 
     return `[${origin}] ${content}`;

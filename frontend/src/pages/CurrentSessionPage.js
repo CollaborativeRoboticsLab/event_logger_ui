@@ -3,12 +3,16 @@ import axios from "axios";
 import EventList from "../components/EventList";
 import ResizableLeftPanel from "../components/ResizableLeftPanel";
 import ResizableBottomPanel from "../components/ResizableBottomPanel";
+import GraphCanvas from "../components/GraphCanvas"; // Make sure this file exists
 import "./CurrentSessionPage.css";
 
 function CurrentSessionPage() {
   const [session, setSession] = useState(null);
   const [sessionName, setSessionName] = useState("");
   const [events, setEvents] = useState([]);
+  const [graphNodes, setGraphNodes] = useState([]);
+  const [graphEdges, setGraphEdges] = useState([]);
+
 
   // Load existing session from localStorage
   useEffect(() => {
@@ -41,6 +45,63 @@ function CurrentSessionPage() {
       console.log("🔁 Received WS Event:", newEvent);
 
       setEvents((prev) => [newEvent, ...prev]);
+
+      if (newEvent.type === "RUNNER_DEFINE") {
+        const fromKey = `${newEvent.source.capability}:${newEvent.source.provider}`;
+        const toKey = `${newEvent.target.capability}:${newEvent.target.provider}`;
+
+        if (!newEvent.target.capability) return; // skip if no target
+
+        setGraphNodes((prev) => {
+          const keys = prev.map(n => `${n.capability}:${n.provider}`);
+          const addNode = (cap, prov) =>
+            keys.includes(`${cap}:${prov}`) ? [] : [{ id: `${cap}:${prov}`, capability: cap, provider: prov, state: "idle" }];
+          return [...prev, ...addNode(newEvent.source.capability, newEvent.source.provider), ...addNode(newEvent.target.capability, newEvent.target.provider)];
+        });
+
+        setGraphEdges((prev) => {
+          const exists = prev.find(
+            (e) =>
+              e.source.capability === newEvent.source.capability &&
+              e.source.provider === newEvent.source.provider &&
+              e.target.capability === newEvent.target.capability &&
+              e.target.provider === newEvent.target.provider
+          );
+          if (exists) return prev;
+          return [...prev, {
+            source: { ...newEvent.source },
+            target: { ...newEvent.target },
+            activated: 0,
+          }];
+        });
+      }
+
+      if (newEvent.type === "RUNNER_EVENT") {
+        const srcKey = `${newEvent.source.capability}:${newEvent.source.provider}`;
+        const tgtKey = `${newEvent.target.capability}:${newEvent.target.provider}`;
+
+        setGraphEdges((edges) =>
+          edges.map((e) => {
+            if (
+              `${e.source.capability}:${e.source.provider}` === srcKey &&
+              `${e.target.capability}:${e.target.provider}` === tgtKey
+            ) {
+              return { ...e, activated: (e.activated || 0) + 1 };
+            }
+            return e;
+          })
+        );
+
+        setGraphNodes((nodes) =>
+          nodes.map((n) => {
+            const key = `${n.capability}:${n.provider}`;
+            if (key === srcKey) return { ...n, state: "complete" };
+            if (key === tgtKey) return { ...n, state: "executing" };
+            return n;
+          })
+        );
+      }
+
     };
 
     frontend_socket.onerror = (err) => console.error("WebSocket error:", err);
@@ -93,15 +154,6 @@ function CurrentSessionPage() {
     </div>
   );
 
-  const TopContent = session ? (
-    <>
-      <h1>Live Session</h1>
-      <p>🟢 <strong>{session.name}</strong> (#{session.serial}) — {new Date(session.createdAt).toLocaleString()}</p>
-    </>
-  ) : (
-    <p>No active session. Start one from the left panel.</p>
-  );
-
   const BottomContent = (
     <EventList events={events} disabled={!isSessionActive} />
   );
@@ -114,9 +166,18 @@ function CurrentSessionPage() {
 
       <div className="main-content-area">
         <ResizableBottomPanel
-          topContent={TopContent}
+          topContent={
+            isLiveSession ? (
+              <GraphCanvas nodes={graphNodes} links={graphEdges} />
+            ) : (
+              <div style={{ padding: "1rem", textAlign: "center" }}>
+                <p>No active session. Start one from the left panel.</p>
+              </div>
+            )
+          }
           bottomContent={BottomContent}
         />
+
       </div>
     </div>
   );

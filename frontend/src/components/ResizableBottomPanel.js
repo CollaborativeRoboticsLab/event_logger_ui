@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import "./ResizableBottomPanel.css";
 
-function ResizableBottomPanel({ topContent, bottomContent, minHeight = 100, defaultHeight = 200 }) {
+function ResizableBottomPanel({ topContent, bottomContent, minHeight = 100, defaultHeight = 250 }) {
   const [height, setHeight] = useState(defaultHeight);
   const isDragging = useRef(false);
 

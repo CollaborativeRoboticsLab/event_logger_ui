@@ -2,7 +2,14 @@ const { FoxgloveClient } = require("@foxglove/ws-protocol");
 const WebSocket = require("ws");
 const Event = require("./models/Event");
 const decoders = require("./decoders");
-const sanitizeEvent = require("./utils/sanitizeEvent"); // ✅ Import the sanitizer
+const sanitizeEvent = require("./utils/sanitizeEvent");
+const updateGraphWithRunnerEvent = require("./utils/graphUpdate");
+
+const {
+  createGraphForSession,
+  finalizeGraphForSession,
+  activeGraphs
+} = require("./utils/graphManage");
 
 let activeClients = new Map();
 let broadcastFn = null;
@@ -62,9 +69,21 @@ function startFoxgloveClient(sessionId) {
       event
         .save()
         .then((saved) => {
-          const sanitized = sanitizeEvent(saved); // ✅ Remove _id, timestamps, etc.
+          const sanitized = sanitizeEvent(saved);
           if (broadcastFn) {
             broadcastFn(sanitized);
+          }
+
+          if (decoded.type === "RUNNER_EVENT") {
+            updateGraphWithRunnerEvent(decoded, sessionId).catch((err) =>
+              console.error("[GraphUpdater] ❌ Failed to update graph:", err.message)
+            );
+          }
+
+          if (decoded.type === "RUNNER_DEFINE") {
+            finalizeGraphForSession(sessionId)
+              .then(() => createGraphForSession(sessionId))
+              .catch((err) => console.error("[GraphLifecycle] ❌ Failed to finalize/create graph:", err.message));
           }
         })
         .catch((err) => console.error("[FoxgloveClient] ❌ Failed to save event:", err.message));
@@ -84,4 +103,7 @@ function startFoxgloveClient(sessionId) {
   tryConnect();
 }
 
-module.exports = { startFoxgloveClient, setBroadcast };
+module.exports = {
+  startFoxgloveClient,
+  setBroadcast
+};

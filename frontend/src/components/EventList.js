@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import EventItem from "./EventItem";
 import "./EventList.css";
 
-const EVENT_TYPES = ["INFO", "DEBUG", "ERROR", "ERROR_ELEMENT", "DEFINE_EVENT"];
+const EVENT_TYPES = ["INFO", "DEBUG", "ERROR", "ERROR_ELEMENT", "RUNNER_DEFINE", "RUNNER_EVENT"];
 
 function EventList({ events, disabled = false  }) {
   const [selectedTypes, setSelectedTypes] = useState(EVENT_TYPES);
