@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const Graph = require("../models/Graph");
 const { createGraphForSession } = require("../utils/graphManage");
 
 router.post("/:sessionId/create", async (req, res) => {
@@ -13,5 +14,15 @@ router.post("/:sessionId/create", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+router.get("/:sessionId", async (req, res) => {
+  try {
+    const graphs = await Graph.find({ session: req.params.sessionId }).sort({ graphNumber: 1 });
+    res.json(graphs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 module.exports = router;

@@ -26,9 +26,14 @@ function ResizableLeftPanel({ defaultWidth = 250, minWidth = 120, children }) {
       onMouseUp={stopDragging}
       onMouseLeave={stopDragging}
     >
-      <div className="left-panel" style={{ width: `${width}px` }}>
+      <div
+        className="left-panel"
+        style={{
+          width: `${width}px`,
+        }}
+      >
         <div className="left-panel-content">
-          {children /* ✅ show content passed from page */}
+          {children}
         </div>
       </div>
       <div className="left-panel-resizer" onMouseDown={startDragging} />
