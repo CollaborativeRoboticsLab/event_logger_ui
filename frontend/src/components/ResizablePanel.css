@@ -8,6 +8,7 @@
 
 .top-section {
   flex-grow: 1;
+  min-height: 200px; /* ✅ Ensures it doesn't collapse to zero height */
   overflow: hidden;
   position: relative;
 }
