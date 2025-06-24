@@ -161,9 +161,7 @@ function CurrentSessionPage() {
           }
           leftContent={LeftContent}
           rightContent={
-            <div className="event-list-section">
-              <EventList events={events} disabled={!isSessionActive} />
-            </div>
+            <EventList events={events} disabled={!isSessionActive} />
           }
         />
       </div>

@@ -41,16 +41,6 @@ function PastSessionsPage() {
     <div className="page-layout">
       <div className="main-content">
         <ResizablePanel
-          leftContent={
-            <SessionSelector
-              sessions={sessions}
-              selectedSession={selectedSession}
-              onSelect={setSelectedSession}
-            />
-          }
-          rightContent={
-            <EventList events={events} disabled={!selectedSession} />
-          }
           topContent={
             <div style={{ position: "relative", height: "100%" }}>
               {currentGraph ? (
@@ -68,6 +58,16 @@ function PastSessionsPage() {
                 <p style={{ padding: "1rem" }}>No graph available for this session.</p>
               )}
             </div>
+          }
+          leftContent={
+            <SessionSelector
+              sessions={sessions}
+              selectedSession={selectedSession}
+              onSelect={setSelectedSession}
+            />
+          }
+          rightContent={
+            <EventList events={events} disabled={!selectedSession} />
           }
         />
       </div>
