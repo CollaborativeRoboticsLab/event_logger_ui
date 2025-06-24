@@ -1,13 +1,14 @@
-/* PastSessionsPage.css */
-
+/* Page layout from below the navbar */
 .page-layout {
   display: flex;
-  height: calc(100vh - 50px); /* assuming navbar is 50px tall */
+  flex-direction: column;
+  height: calc(100vh - 50px); /* Adjust if navbar is taller */
   width: 100%;
   overflow: hidden;
 }
 
-.main-right {
+/* Main area split into graph + bottom panel */
+.main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -15,34 +16,8 @@
   overflow: hidden;
 }
 
-.session-list-item {
-  padding: 10px;
-  margin-bottom: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #fafafa;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.session-list-item:hover {
-  background-color: #e0e0e0;
-}
-
-.session-list-item strong {
-  display: block;
-  font-size: 1rem;
-  color: #333;
-}
-
-.session-list-item small {
-  color: #666;
-  font-size: 0.85rem;
-}
-
-.left-panel-content {
+/* Bottom panel layout with session selector + events */
+.bottom-panel-content {
+  display: flex;
   height: 100%;
-  overflow-y: auto;
-  padding: 12px;
-  box-sizing: border-box;
 }

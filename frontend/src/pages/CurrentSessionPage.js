@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import EventList from "../components/EventList";
-import ResizableLeftPanel from "../components/ResizableLeftPanel";
-import ResizableBottomPanel from "../components/ResizableBottomPanel";
-import GraphCanvas from "../components/GraphCanvas"; // Make sure this file exists
+import GraphCanvas from "../components/GraphCanvas";
+import ResizablePanel from "../components/ResizablePanel";
 import "./CurrentSessionPage.css";
 
 function CurrentSessionPage() {
@@ -13,8 +12,7 @@ function CurrentSessionPage() {
   const [graphNodes, setGraphNodes] = useState([]);
   const [graphEdges, setGraphEdges] = useState([]);
 
-
-  // Load existing session from localStorage
+  // Load from localStorage if session exists
   useEffect(() => {
     const saved = localStorage.getItem("liveSession");
     if (saved) {
@@ -23,11 +21,11 @@ function CurrentSessionPage() {
     }
   }, []);
 
-  // Fetch events for resumed past session
+  // Fetch events if it's a resumed session
   useEffect(() => {
     if (!session || session.isNewSession) return;
-
-    axios.get(`http://localhost:5000/api/events?session=${session._id}`)
+    axios
+      .get(`http://localhost:5000/api/events?session=${session._id}`)
       .then((res) => setEvents(res.data))
       .catch((err) => console.error("Failed to load events:", err));
   }, [session]);
@@ -40,23 +38,23 @@ function CurrentSessionPage() {
 
     frontend_socket.onmessage = (event) => {
       const newEvent = JSON.parse(event.data);
-
-      // ✅ Check this log
       console.log("🔁 Received WS Event:", newEvent);
-
       setEvents((prev) => [newEvent, ...prev]);
 
       if (newEvent.type === "RUNNER_DEFINE") {
         const fromKey = `${newEvent.source.capability}:${newEvent.source.provider}`;
         const toKey = `${newEvent.target.capability}:${newEvent.target.provider}`;
-
-        if (!newEvent.target.capability) return; // skip if no target
+        if (!newEvent.target.capability) return;
 
         setGraphNodes((prev) => {
-          const keys = prev.map(n => `${n.capability}:${n.provider}`);
+          const keys = prev.map((n) => `${n.capability}:${n.provider}`);
           const addNode = (cap, prov) =>
             keys.includes(`${cap}:${prov}`) ? [] : [{ id: `${cap}:${prov}`, capability: cap, provider: prov, state: "idle" }];
-          return [...prev, ...addNode(newEvent.source.capability, newEvent.source.provider), ...addNode(newEvent.target.capability, newEvent.target.provider)];
+          return [
+            ...prev,
+            ...addNode(newEvent.source.capability, newEvent.source.provider),
+            ...addNode(newEvent.target.capability, newEvent.target.provider),
+          ];
         });
 
         setGraphEdges((prev) => {
@@ -68,11 +66,7 @@ function CurrentSessionPage() {
               e.target.provider === newEvent.target.provider
           );
           if (exists) return prev;
-          return [...prev, {
-            source: { ...newEvent.source },
-            target: { ...newEvent.target },
-            activated: 0,
-          }];
+          return [...prev, { source: newEvent.source, target: newEvent.target, activated: 0 }];
         });
       }
 
@@ -101,22 +95,18 @@ function CurrentSessionPage() {
           })
         );
       }
-
     };
 
     frontend_socket.onerror = (err) => console.error("WebSocket error:", err);
-
     return () => frontend_socket.close();
   }, [session]);
 
   const handleStart = async () => {
     if (!sessionName.trim()) return;
-
     try {
       const res = await axios.post("http://localhost:5000/api/sessions?listen=true", {
         name: sessionName,
       });
-
       const newSession = { ...res.data, isNewSession: true };
       setSession(newSession);
       setEvents([]);
@@ -135,49 +125,47 @@ function CurrentSessionPage() {
   const isSessionActive = !!session;
   const isLiveSession = session?.isNewSession;
 
-  const LeftPanelContent = (
-    <div>
-      <h3>Start New Session</h3>
-      <input
-        type="text"
-        value={sessionName}
-        placeholder="Enter session name"
-        onChange={(e) => setSessionName(e.target.value)}
-        disabled={isSessionActive}
-      />
-      <button onClick={handleStart} disabled={!sessionName.trim() || isSessionActive}>
-        Start
-      </button>
-      <button onClick={handleStop} disabled={!isSessionActive}>
-        Stop
-      </button>
+  const LeftContent = (
+    <div className="left-panel-content">
+      <div className="session-controls">
+        <h3>Create Session :</h3>
+        <input
+          type="text"
+          value={sessionName}
+          placeholder="Enter session name"
+          onChange={(e) => setSessionName(e.target.value)}
+          disabled={isSessionActive}
+        />
+        <button onClick={handleStart} disabled={!sessionName.trim() || isSessionActive}>
+          Start Session
+        </button>
+        <button onClick={handleStop} disabled={!isSessionActive}>
+          Stop Session
+        </button>
+      </div>
     </div>
-  );
-
-  const BottomContent = (
-    <EventList events={events} disabled={!isSessionActive} />
   );
 
   return (
     <div className="page-layout">
-      <ResizableLeftPanel>
-        {LeftPanelContent}
-      </ResizableLeftPanel>
-
       <div className="main-content-area">
-        <ResizableBottomPanel
+        <ResizablePanel
           topContent={
             isLiveSession ? (
               <GraphCanvas nodes={graphNodes} links={graphEdges} />
             ) : (
               <div style={{ padding: "1rem", textAlign: "center" }}>
-                <p>No active session. Start one from the left panel.</p>
+                <p>No active session. Start one below.</p>
               </div>
             )
           }
-          bottomContent={BottomContent}
+          leftContent={LeftContent}
+          rightContent={
+            <div className="event-list-section">
+              <EventList events={events} disabled={!isSessionActive} />
+            </div>
+          }
         />
-
       </div>
     </div>
   );

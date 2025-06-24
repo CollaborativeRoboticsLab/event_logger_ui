@@ -47,7 +47,7 @@ function EventList({ events, disabled = false  }) {
           <table className="filter-table">
             <tbody>
               <tr>
-                <td><strong>Message Types</strong></td>
+                <td><strong>Types</strong></td>
                 <td>
                   <div className="checkbox-column">
                     {EVENT_TYPES.map((type) => (

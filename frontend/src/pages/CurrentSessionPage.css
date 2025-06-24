@@ -1,50 +1,62 @@
-.left-panel-content {
-  padding: 12px;
-  /* ✅ ensures inner spacing */
-  box-sizing: border-box;
-}
-
-.left-panel-content input[type="text"] {
-  width: 100%;
-  /* ✅ prevents overflow */
-  padding: 6px;
-  margin: 6px 0;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-
-.left-panel-content button {
-  display: block;
-  width: 100%;
-  padding: 8px;
-  margin-top: 6px;
-  border: none;
-  border-radius: 4px;
-  background-color: #0077cc;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.left-panel-content button:disabled {
-  background-color: #999;
-  cursor: not-allowed;
-}
-
-
-/* Full height layout minus navbar height */
+/* Layout container: fills viewport except navbar */
 .page-layout {
   display: flex;
-  height: calc(100vh - 50px);
-  /* Adjust if NavBar is taller */
+  flex-direction: column;
+  height: calc(100vh - 50px); /* Adjust if navbar height changes */
   width: 100%;
   overflow: hidden;
 }
 
+/* Graph canvas and bottom panel container */
 .main-content-area {
   flex: 1;
   display: flex;
   flex-direction: column;
   height: 100%;
+}
+
+/* Entire bottom panel: split between controls + events */
+.left-panel-content {
+  display: flex;
+  flex: 1;
+  height: 100%;
+  width: 100%;
+}
+
+/* Left-side session controls inside bottom panel */
+.session-controls {
+  width: 100%;
+  padding: 10px;
+  border-right: 1px solid #ccc;
+  background-color: #f9f9f9;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Input field inside session controls */
+.session-controls input[type="text"] {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #464646;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+/* Buttons inside session controls */
+.session-controls button{
+  width: 100%;
+  padding: 8px;
+  background-color: #009113;
+  color: rgb(0, 0, 0);
+  font-weight: bold;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.session-controls button:disabled {
+  background-color: #d1d1d1;
+  cursor: not-allowed;
 }
