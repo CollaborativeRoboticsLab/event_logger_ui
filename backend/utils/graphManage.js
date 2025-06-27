@@ -11,15 +11,16 @@ async function createGraphForSession(sessionId) {
   const graphCount = await Graph.countDocuments({ session: sessionId });
   const graphNumber = graphCount + 1;
 
-  const { nodes, edges } = generateGraph(events);
+  const { nodes, edges, eventLog } = generateGraph(events);
   const graphId = `${sessionId.toString()}-graph${graphNumber}`;
 
   const graph = new Graph({
     graphId,
     session: sessionId,
-    graphNumber,
+    graphNo: graphNumber,
     nodes,
     edges,
+    eventLog,
   });
 
   await graph.save();
@@ -34,6 +35,7 @@ async function finalizeGraphForSession(sessionId) {
   if (!active) return;
 
   active.completedAt = new Date();
+  active.completed = true;
 
   for (const node of active.nodes) {
     if (node.state === "executing") node.state = "complete";

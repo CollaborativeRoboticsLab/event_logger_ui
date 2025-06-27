@@ -1,36 +1,38 @@
 const mongoose = require("mongoose");
 
 const nodeSchema = new mongoose.Schema({
+  nodeId: { type: Number, required: true, unique: true },
   capability: String,
   provider: String,
-  state: {
+}, { _id: false });
+
+const edgeSchema = new mongoose.Schema({
+  edgeId: { type: Number, required: true, unique: true },
+  sourceNodeID: { type: Number, required: true }, // Node ID of the source node
+  targetNodeID: { type: Number, required: true }, // Node ID of the target node
+  activated: { type: Boolean, default: false },
+}, { _id: false });
+
+const eventLogSchema = new mongoose.Schema({
+  eventId: { type: Number, required: true, unique: true },
+  nodeId: { type: Number, default: null }, // Optional, can be null if not related to a node
+  edgeId: { type: Number, default: null }, // Optional, can be null if not related to an edge
+  nodeState: {
     type: String,
     enum: ["idle", "executing", "complete", "failed"],
     default: "idle",
   },
-}, { _id: false });
-
-const edgeSchema = new mongoose.Schema({
-  from: nodeSchema,
-  to: nodeSchema,
-  activated: { type: Number, default: 0 },
-}, { _id: false });
-
-const eventLogSchema = new mongoose.Schema({
-  timestamp: { type: Date, default: Date.now },
-  source: nodeSchema,
-  target: nodeSchema,
-  action: String, // "activate" or "fail"
-  edgeFound: Boolean,
+  edgeState: { type: Boolean, default: false }, // Indicates if the edge is activated
 }, { _id: false });
 
 const graphSchema = new mongoose.Schema({
   graphId: { type: String, required: true, unique: true },
   session: { type: mongoose.Schema.Types.ObjectId, ref: "Session", required: true },
-  graphNumber: { type: Number, required: true },
+  graphNo: { type: Number, required: true, unique: true e},
   nodes: [nodeSchema],
   edges: [edgeSchema],
   eventLog: [eventLogSchema],
+  completed: { type: Boolean, default: false },
   completedAt: Date,
 }, { timestamps: true });
 

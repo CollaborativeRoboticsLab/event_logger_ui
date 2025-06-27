@@ -24,10 +24,9 @@ function GraphTimelinePlayer({ graph }) {
       source: `${e.from.capability}:${e.from.provider}`,
       target: `${e.to.capability}:${e.to.provider}`,
       activated: 0,
-      from: { ...e.from },  // ✅ Needed for matching later
+      from: { ...e.from },
       to: { ...e.to }
     }));
-
 
     const logSteps = graph.eventLog?.slice(0, step + 1) || [];
 
@@ -65,8 +64,11 @@ function GraphTimelinePlayer({ graph }) {
       />
 
       <div className="timeline-controls floating-left">
-        <button disabled={step <= 0} onClick={() => setStep(step - 1)}>← Back</button>
-        <span>Step {graph.eventLog?.length ? step + 1 : 0} / {graph.eventLog?.length || 0}</span>
+        <button
+          disabled={step <= 0}
+          onClick={() => setStep(step - 1)}
+        >← Back</button>
+        <span>Step {graph.eventLog.length ? step + 1 : 0} / {graph.eventLog.length || 0}</span>
         <button
           disabled={step >= (graph.eventLog?.length || 0) - 1}
           onClick={() => setStep(step + 1)}

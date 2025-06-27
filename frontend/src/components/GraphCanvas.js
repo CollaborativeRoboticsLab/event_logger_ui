@@ -1,5 +1,6 @@
 import React from "react";
 import ForceGraph2D from "react-force-graph-2d";
+import "./GraphCanvas.css";
 
 function GraphCanvas({ nodes, links }) {
   return (
@@ -17,12 +18,12 @@ function GraphCanvas({ nodes, links }) {
         nodeCanvasObject={(node, ctx, globalScale) => {
           const radius = 5;
           const fontSize = 10 / globalScale;
-          const lineSpacing = 1;
 
-          const cap = node.capability || "";
-          const prov = node.provider || "";
+          // Extract short capability name
+          const capabilityParts = (node.capability || "").split("/");
+          const shortCapability = capabilityParts[capabilityParts.length - 1] || "";
 
-          // Draw circle
+          // Draw node circle
           ctx.beginPath();
           ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI, false);
           ctx.fillStyle = node.color || "#0077cc";
@@ -31,15 +32,16 @@ function GraphCanvas({ nodes, links }) {
           ctx.lineWidth = 0.5;
           ctx.stroke();
 
-          // Draw multiline label
+          // Draw short label
           ctx.font = `${fontSize}px Sans-Serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
           ctx.fillStyle = "#000";
-          ctx.fillText(cap, node.x, node.y + radius + 2);
-          ctx.fillText(prov, node.x, node.y + radius + fontSize + lineSpacing + 2);
+          ctx.fillText(shortCapability, node.x, node.y + radius + 2);
         }}
-        nodeLabel="" // Disable default tooltip label
+        nodeLabel={(node) =>
+          `capability: ${node.capability || "N/A"}  |  provider: ${node.provider || "N/A"}`
+        }
       />
     </div>
   );

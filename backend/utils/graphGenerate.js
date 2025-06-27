@@ -1,34 +1,77 @@
 function generateGraph(events) {
   const nodeSet = new Set();
   const edges = [];
+  const nodes = [];
+  const events = [];
+  let nodeId = 0;
+  let edgeId = 0;
+  let eventId = 0;
 
   for (const event of events) {
     if (event.type !== "RUNNER_DEFINE") continue;
 
-    const source = event.source;
-    const target = event.target;
+    let sourceNodeID = 0;
+    let targetNodeID = 0;
 
-    if (!source.capability || !source.provider) continue;
-    if (!target.capability || !target.provider) continue; // skip if target is empty
+    const sourceCapability = event.source.capability;
+    const sourceProvider = event.source.provider;
+    const targetCapability = event.target.capability;
+    const targetProvider = event.target.provider;
 
-    const srcKey = `${source.capability}:${source.provider}`;
-    const tgtKey = `${target.capability}:${target.provider}`;
+    if (!sourceCapability || !sourceProvider) continue;
+    if (!targetCapability || !targetProvider) continue; // skip if target is empty
 
-    nodeSet.add(srcKey);
-    nodeSet.add(tgtKey);
+    const srcKey = `${sourceCapability}:${sourceProvider}`;
+    const tgtKey = `${targetCapability}:${targetProvider}`;
 
+    // Check if source is a unique node
+    if (!nodeSet.has(srcKey)) {
+      nodeSet.add(srcKey);
+      nodes.push({ nodeId, sourceCapability, sourceProvider });
+      events.push({ eventId, nodeId, edgeId: null, nodeState: "idle", edgeState: false });
+      sourceNodeID = nodeId; // Store the node ID for the source
+      eventId++;
+      nodeId++;
+    } else {
+      sourceNodeID = nodes.find((n) => n.capability === sourceCapability && n.provider === sourceProvider)?.nodeId;
+    }
+
+    // Check if target is a unique node
+    if (!nodeSet.has(tgtKey)) {
+      nodeSet.add(tgtKey);
+      nodes.push({ nodeId, targetCapability, targetProvider });
+      events.push({ eventId, nodeId, edgeId: null, nodeState: "idle", edgeState: false });
+      targetNodeID = nodeId; // Store the node ID for the target
+      eventId++;
+      nodeId++;
+    }
+    else {
+      targetNodeID = nodes.find((n) => n.capability === targetCapability && n.provider === targetProvider)?.nodeId;
+    }
+
+    // Create an edge from source to target
     edges.push({
-      from: { capability: source.capability, provider: source.provider },
-      to: { capability: target.capability, provider: target.provider },
+      edgeId,
+      sourceNodeID,
+      targetNodeID,
+      activated: false,
     });
+
+    // Log the edge event
+    events.push({
+      eventId: eventId,
+      nodeId: null, // No specific node for edges
+      edgeId: edgeId,
+      nodeState: null, // Not applicable for edges
+      edgeState: false,
+    });
+
+    edgeId++;
+    eventId++;
   }
 
-  const nodes = Array.from(nodeSet).map((key) => {
-    const [capability, provider] = key.split(":");
-    return { capability, provider };
-  });
 
-  return { nodes, edges };
+  return { nodes, edges, events };
 }
 
 module.exports = generateGraph;
