@@ -15,7 +15,8 @@ function PastSessionsPage() {
   const [graphIndex, setGraphIndex] = useState(0);
 
   useEffect(() => {
-    axios.get("http://localhost:5000/api/sessions")
+    axios
+      .get("http://localhost:5000/api/sessions")
       .then((res) => setSessions(res.data))
       .catch((err) => console.error("Failed to load sessions", err));
   }, []);
@@ -23,11 +24,15 @@ function PastSessionsPage() {
   useEffect(() => {
     if (!selectedSession) return;
 
-    axios.get(`http://localhost:5000/api/events?session=${selectedSession._id}`)
+    // Load past events
+    axios
+      .get(`http://localhost:5000/api/events?session=${selectedSession._id}`)
       .then((res) => setEvents(res.data))
       .catch((err) => console.error("Failed to load session events", err));
 
-    axios.get(`http://localhost:5000/api/graphs/${selectedSession._id}`)
+    // Load past graphs
+    axios
+      .get(`http://localhost:5000/api/graphs/${selectedSession._id}`)
       .then((res) => {
         setGraphs(res.data);
         setGraphIndex(0);

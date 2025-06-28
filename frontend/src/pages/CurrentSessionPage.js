@@ -37,63 +37,15 @@ function CurrentSessionPage() {
     const frontend_socket = new WebSocket("ws://localhost:5000");
 
     frontend_socket.onmessage = (event) => {
-      const newEvent = JSON.parse(event.data);
-      console.log("🔁 Received WS Event:", newEvent);
-      setEvents((prev) => [newEvent, ...prev]);
+      const message = JSON.parse(event.data);
+      console.log("🔁 Received WS Message:", message);
 
-      if (newEvent.type === "RUNNER_DEFINE") {
-        const fromKey = `${newEvent.source.capability}:${newEvent.source.provider}`;
-        const toKey = `${newEvent.target.capability}:${newEvent.target.provider}`;
-        if (!newEvent.target.capability) return;
-
-        setGraphNodes((prev) => {
-          const keys = prev.map((n) => `${n.capability}:${n.provider}`);
-          const addNode = (cap, prov) =>
-            keys.includes(`${cap}:${prov}`) ? [] : [{ id: `${cap}:${prov}`, capability: cap, provider: prov, state: "idle" }];
-          return [
-            ...prev,
-            ...addNode(newEvent.source.capability, newEvent.source.provider),
-            ...addNode(newEvent.target.capability, newEvent.target.provider),
-          ];
-        });
-
-        setGraphEdges((prev) => {
-          const exists = prev.find(
-            (e) =>
-              e.source.capability === newEvent.source.capability &&
-              e.source.provider === newEvent.source.provider &&
-              e.target.capability === newEvent.target.capability &&
-              e.target.provider === newEvent.target.provider
-          );
-          if (exists) return prev;
-          return [...prev, { source: newEvent.source, target: newEvent.target, activated: 0 }];
-        });
-      }
-
-      if (newEvent.type === "RUNNER_EVENT") {
-        const srcKey = `${newEvent.source.capability}:${newEvent.source.provider}`;
-        const tgtKey = `${newEvent.target.capability}:${newEvent.target.provider}`;
-
-        setGraphEdges((edges) =>
-          edges.map((e) => {
-            if (
-              `${e.source.capability}:${e.source.provider}` === srcKey &&
-              `${e.target.capability}:${e.target.provider}` === tgtKey
-            ) {
-              return { ...e, activated: (e.activated || 0) + 1 };
-            }
-            return e;
-          })
-        );
-
-        setGraphNodes((nodes) =>
-          nodes.map((n) => {
-            const key = `${n.capability}:${n.provider}`;
-            if (key === srcKey) return { ...n, state: "complete" };
-            if (key === tgtKey) return { ...n, state: "executing" };
-            return n;
-          })
-        );
+      if (message.type === "GRAPH_UPDATE") {
+        const { graph } = message;
+        setGraphNodes(graph.nodes || []);
+        setGraphEdges(graph.edges || []);
+      } else {
+        setEvents((prev) => [message, ...prev]);
       }
     };
 

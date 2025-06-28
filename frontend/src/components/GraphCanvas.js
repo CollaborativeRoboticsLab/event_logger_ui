@@ -10,11 +10,7 @@ function GraphCanvas({ nodes, links }) {
         nodeAutoColorBy="state"
         linkDirectionalArrowLength={4}
         linkDirectionalArrowRelPos={1}
-        linkColor={(link) => {
-          if (link.activated > 2) return "#28a745";
-          if (link.activated > 0) return "#ffc107";
-          return "#ccc";
-        }}
+        linkColor={(link) => (link.activated ? "#28a745" : "#000")} // green if activated
         nodeCanvasObject={(node, ctx, globalScale) => {
           const radius = 5;
           const fontSize = 10 / globalScale;
@@ -26,7 +22,11 @@ function GraphCanvas({ nodes, links }) {
           // Draw node circle
           ctx.beginPath();
           ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI, false);
-          ctx.fillStyle = node.color || "#0077cc";
+          ctx.fillStyle =
+            node.state === "executing" ? "#ffd700" :
+              node.state === "complete" ? "#28a745" :
+                node.state === "failed" ? "#ff4d4d" :
+                  "#add8e6"; // idle - light blue
           ctx.fill();
           ctx.strokeStyle = "#333";
           ctx.lineWidth = 0.5;
@@ -36,7 +36,6 @@ function GraphCanvas({ nodes, links }) {
           ctx.font = `${fontSize}px Sans-Serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
-          ctx.fillStyle = "#000";
           ctx.fillText(shortCapability, node.x, node.y + radius + 2);
         }}
         nodeLabel={(node) =>
