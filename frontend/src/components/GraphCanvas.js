@@ -36,6 +36,7 @@ function GraphCanvas({ nodes, links }) {
           ctx.font = `${fontSize}px Sans-Serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
+          ctx.fillStyle = 'black'; // Desired font color
           ctx.fillText(shortCapability, node.x, node.y + radius + 2);
         }}
         nodeLabel={(node) =>

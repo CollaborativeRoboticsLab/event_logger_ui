@@ -10,7 +10,6 @@ const edgeSchema = new mongoose.Schema({
   edgeId: { type: Number, required: true, unique: true },
   sourceNodeID: { type: Number, required: true }, // Node ID of the source node
   targetNodeID: { type: Number, required: true }, // Node ID of the target node
-  activated: { type: Boolean, default: false },
 }, { _id: false });
 
 const eventLogSchema = new mongoose.Schema({
@@ -28,7 +27,7 @@ const eventLogSchema = new mongoose.Schema({
 const graphSchema = new mongoose.Schema({
   graphId: { type: String, required: true, unique: true },
   session: { type: mongoose.Schema.Types.ObjectId, ref: "Session", required: true },
-  graphNo: { type: Number, required: true, unique: true e},
+  graphNo: { type: Number, required: true, unique: true },
   nodes: [nodeSchema],
   edges: [edgeSchema],
   eventLog: [eventLogSchema],
