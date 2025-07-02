@@ -9,22 +9,32 @@ This app allows:
 - REST API for historical data access
 
 
-## 🚀 How to Run
-
-### 1. Prerequisites
+## Prerequisites
 
 - Node.js ≥ 18.x
 - MongoDB (running locally or via Atlas)
 - ROS2 Capabilities2 system publishing to `/events` via [foxglove-bridge](https://github.com/foxglove/ros-foxglove-bridge)
 
-### 2. Clone and Setup
+## Clone and Setup
 
 ```bash
 git clone https://github.com/CollaborativeRoboticsLab/capabilities2-ui.git
 cd capabilities2-ui
 ```
 
-### 3. Backend
+## Docker based Deployment
+
+Make sure you have docker installed. Then,
+
+```sh
+docker compose up
+```
+
+## Pure Deployment
+
+### Backend
+
+If you want to modify or start the backend seperately, run following commands
 
 ```bash
 cd backend
@@ -52,7 +62,9 @@ node server.js
 ```
 
 
-### 4. Frontend
+### Frontend
+
+If you want to modify or start the backend seperately, run following commands
 
 ```bash
 cd ../frontend
