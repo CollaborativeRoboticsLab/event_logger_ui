@@ -12,7 +12,7 @@ function CurrentSessionPage() {
   const [graphNodes, setGraphNodes] = useState([]);
   const [graphEdges, setGraphEdges] = useState([]);
 
-  // Load from localStorage if session exists
+  // Load saved session on mount
   useEffect(() => {
     const saved = localStorage.getItem("liveSession");
     if (saved) {
@@ -21,16 +21,17 @@ function CurrentSessionPage() {
     }
   }, []);
 
-  // Fetch events if it's a resumed session
+  // Load events for resumed session
   useEffect(() => {
     if (!session || session.isNewSession) return;
+
     axios
       .get(`http://localhost:5000/api/events?session=${session._id}`)
       .then((res) => setEvents(res.data))
       .catch((err) => console.error("Failed to load events:", err));
   }, [session]);
 
-  // WebSocket for live session
+  // Live session WebSocket
   useEffect(() => {
     if (!session || !session.isNewSession) return;
 
@@ -42,8 +43,33 @@ function CurrentSessionPage() {
 
       if (message.type === "GRAPH_UPDATE") {
         const { graph } = message;
-        setGraphNodes(graph.nodes || []);
-        setGraphEdges(graph.edges || []);
+
+        if (!graph) {
+          console.warn("GRAPH_UPDATE received with no graph data:", message);
+          return;
+        }
+
+        // Convert nodeId → string ID format
+        const nodeMap = new Map();
+        const convertedNodes = graph.nodes.map(n => {
+          const id = `${n.capability}:${n.provider}`;
+          nodeMap.set(n.nodeId, id);
+          return {
+            ...n,
+            id,
+            state: "idle",
+          };
+        });
+
+        const convertedEdges = graph.edges.map(e => ({
+          ...e,
+          source: nodeMap.get(e.sourceNodeID),
+          target: nodeMap.get(e.targetNodeID),
+          activated: 0,
+        }));
+
+        setGraphNodes(convertedNodes);
+        setGraphEdges(convertedEdges);
       } else {
         setEvents((prev) => [message, ...prev]);
       }
@@ -71,6 +97,8 @@ function CurrentSessionPage() {
   const handleStop = () => {
     setSession(null);
     setEvents([]);
+    setGraphNodes([]);
+    setGraphEdges([]);
     localStorage.removeItem("liveSession");
   };
 
@@ -112,9 +140,7 @@ function CurrentSessionPage() {
             )
           }
           leftContent={LeftContent}
-          rightContent={
-            <EventList events={events} disabled={!isSessionActive} />
-          }
+          rightContent={<EventList events={events} disabled={!isSessionActive} />}
         />
       </div>
     </div>

@@ -9,8 +9,15 @@ const graphNumbers = new Map(); // sessionId => graphId
  * @param {number} graphNo - The graph number to set as active for the session.
  * This function updates the activeGraphKeys map to associate the session ID with the specified graph number.
  */
-function setGraphNumbers(sessionId, graphNo) {
-  graphNumbers.set(sessionId, graphNo);
+async function updateGraphNumbers(sessionId) {
+  const graphCount = await Graph.countDocuments({ session: sessionId });
+  graphNumbers.set(sessionId, graphCount + 1);
+
+  console.log(`[GraphManager] Updated graph number for session ${sessionId}: ${getGraphNumbers(sessionId)}`);
+}
+
+function getGraphNumbers(sessionId) {
+  return graphNumbers.get(sessionId) || null;
 }
 
 /** Generates a unique key for the active graph based on session ID and graph number.
@@ -21,7 +28,7 @@ function setGraphNumbers(sessionId, graphNo) {
  * This key is used to store and retrieve the active graph in the activeGraphs map.
  */
 function getActiveGraphKey(sessionId) {
-  const activeGraphNo = graphNumbers.get(sessionId) || null;
+  const activeGraphNo = getGraphNumbers(sessionId);
 
   if (activeGraphNo === null) {
     console.warn(`[GraphManager] No active graph number for session ${sessionId}`);
@@ -86,7 +93,7 @@ function generateGraph(eventsList) {
   const nodeSet = new Set();
   const edges = [];
   const nodes = [];
-  const events = [];
+  const eventLog = [];
   let nodeId = 0;
   let edgeId = 0;
   let eventId = 0;
@@ -120,7 +127,7 @@ function generateGraph(eventsList) {
         capability: sourceCapability,
         provider: sourceProvider
       });
-      events.push({
+      eventLog.push({
         eventId: eventId,
         nodeId: nodeId,
         edgeId: null,
@@ -137,6 +144,25 @@ function generateGraph(eventsList) {
       targetNodeID = nodes.find((n) =>
         n.capability === targetCapability &&
         n.provider === targetProvider)?.nodeId;
+
+      // Create an edge from source to target
+      edges.push({
+        edgeId: edgeId,
+        sourceNodeID: sourceNodeID,
+        targetNodeID: targetNodeID,
+      });
+
+      // Log the edge event
+      eventLog.push({
+        eventId: eventId,
+        nodeId: null, // No specific node for edges
+        edgeId: edgeId,
+        nodeState: null, // Not applicable for edges
+        edgeState: false,
+      });
+      edgeId++;
+      eventId++;
+
     } else {
       nodeSet.add(tgtKey);
       nodes.push({
@@ -144,39 +170,28 @@ function generateGraph(eventsList) {
         capability: targetCapability,
         provider: targetProvider
       });
-      events.push({
+
+      targetNodeID = nodeId; // Store the node ID for the target
+      // Create an edge from source to target
+      edges.push({
+        edgeId: edgeId,
+        sourceNodeID: sourceNodeID,
+        targetNodeID: targetNodeID,
+      });
+      eventLog.push({
         eventId: eventId,
-        nodeId: nodeId,
-        edgeId: null,
+        nodeId: targetNodeID,
+        edgeId: edgeId,
         nodeState: "idle",
         edgeState: false
       });
-      targetNodeID = nodeId; // Store the node ID for the target
       eventId++;
       nodeId++;
+      edgeId++;
     }
-
-    // Create an edge from source to target
-    edges.push({
-      edgeId: edgeId,
-      sourceNodeID: sourceNodeID,
-      targetNodeID: targetNodeID,
-    });
-
-    // Log the edge event
-    events.push({
-      eventId: eventId,
-      nodeId: null, // No specific node for edges
-      edgeId: edgeId,
-      nodeState: null, // Not applicable for edges
-      edgeState: false,
-    });
-
-    edgeId++;
-    eventId++;
   }
 
-  return { nodes, edges, events };
+  return { nodes, edges, eventLog };
 }
 
 /** Creates a graph for a given session.
@@ -191,19 +206,13 @@ function generateGraph(eventsList) {
  * generates nodes and edges, and creates a new Graph document in the database.
  * If no events are found, it returns null.
  */
-async function createGraphForSession(sessionId) {
-
-  const events = await Event.find({ session: sessionId, type: "RUNNER_DEFINE" });
+async function createGraphForSession(sessionId, events) {
   if (!events.length) return null;
-
-  const graphCount = await Graph.countDocuments({ session: sessionId });
-  const graphNumber = graphCount + 1;
-
-  setGraphNumbers(sessionId, graphNumber);
 
   const { nodes, edges, eventLog } = generateGraph(events);
 
   const graphKey = getActiveGraphKey(sessionId);
+  const graphNumber = getGraphNumbers(sessionId);
 
   console.log("Graph data for graph:", graphKey);
   console.log("Nodes:", nodes);
@@ -238,17 +247,19 @@ async function createGraphForSession(sessionId) {
  */
 async function finalizeGraphForSession(sessionId) {
   const key = getActiveGraphKey(sessionId);
-  const activeG = getActiveGraph(sessionId);
+  const graph = getActiveGraph(sessionId);
 
-  if (!activeG) return;
+  if (!graph) return;
 
-  activeG.completedAt = new Date();
-  activeG.completed = true;
+  graph.completedAt = new Date();
+  graph.completed = true;
 
-  await activeG.save();
+  await graph.save();
   activeGraphs.delete(key);
 
-  console.log(`[GraphFinalizer] Finalized graph ${activeG.graphId}`);
+  console.log(`[GraphFinalizer] Finalized graph ${graph.graphId}`);
+
+  updateGraphNumbers(sessionId);
 }
 
 /** Updates the graph with a runner event.
@@ -265,7 +276,7 @@ async function finalizeGraphForSession(sessionId) {
  * If the event data is invalid or if the source or target nodes are not found in the graph,
  * it logs a warning and returns null.
  */
-async function updateGraphWithRunnerEvent(event, sessionId) {
+async function updateGraphWithRunnerEvent(sessionId, event) {
   const graph = getActiveGraph(sessionId);
 
   if (!graph) {
@@ -355,20 +366,10 @@ async function updateGraphWithRunnerEvent(event, sessionId) {
 
     graph.eventLog.push({
       eventId: eventId,
-      nodeId: null,
-      edgeId: edgeID,
-      nodeState: null,
-      edgeState: edgeActivated
-    });
-
-    eventId++;
-
-    graph.eventLog.push({
-      eventId: eventId,
       nodeId: targetNodeID,
-      edgeId: null,
+      edgeId: edgeID,
       nodeState: targetState,
-      edgeState: false
+      edgeState: edgeActivated
     });
 
     await graph.save();
@@ -381,5 +382,6 @@ module.exports = {
   createGraphForSession,
   finalizeGraphForSession,
   updateGraphWithRunnerEvent,
+  updateGraphNumbers,
   getActiveGraphKey,
 };

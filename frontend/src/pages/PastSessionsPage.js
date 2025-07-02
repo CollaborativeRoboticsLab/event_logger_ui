@@ -31,14 +31,32 @@ function PastSessionsPage() {
       .catch((err) => console.error("Failed to load session events", err));
 
     // Load past graphs
+    // Get graph count first
     axios
-      .get(`http://localhost:5000/api/graphs/${selectedSession._id}`)
+      .get(`http://localhost:5000/api/graphs/${selectedSession._id}/count`)
       .then((res) => {
-        setGraphs(res.data);
+        const count = res.data.count;
+        setGraphs(Array(count).fill(null)); // Placeholder
         setGraphIndex(0);
+        // Load the first graph
+        fetchGraphByIndex(0, selectedSession._id);
       })
-      .catch((err) => console.error("Failed to load graphs", err));
+      .catch((err) => console.error("Failed to load graph count", err));
   }, [selectedSession]);
+
+
+  const fetchGraphByIndex = (index, sessionId) => {
+    axios
+      .get(`http://localhost:5000/api/graphs/${sessionId}/${index}`)
+      .then((res) => {
+        setGraphs((prev) => {
+          const updated = [...prev];
+          updated[index] = res.data;
+          return updated;
+        });
+      })
+      .catch((err) => console.error(`Failed to load graph at index ${index}`, err));
+  };
 
   const currentGraph = graphs[graphIndex];
 
@@ -55,8 +73,16 @@ function PastSessionsPage() {
                     graphIndex={graphIndex}
                     graphCount={graphs.length}
                     currentGraph={currentGraph}
-                    onPrev={() => setGraphIndex((i) => i - 1)}
-                    onNext={() => setGraphIndex((i) => i + 1)}
+                    onPrev={() => {
+                      const newIndex = graphIndex - 1;
+                      setGraphIndex(newIndex);
+                      if (!graphs[newIndex]) fetchGraphByIndex(newIndex, selectedSession._id);
+                    }}
+                    onNext={() => {
+                      const newIndex = graphIndex + 1;
+                      setGraphIndex(newIndex);
+                      if (!graphs[newIndex]) fetchGraphByIndex(newIndex, selectedSession._id);
+                    }}
                   />
                 </>
               ) : (

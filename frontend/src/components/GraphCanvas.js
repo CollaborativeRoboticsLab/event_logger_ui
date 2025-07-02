@@ -8,9 +8,11 @@ function GraphCanvas({ nodes, links }) {
       <ForceGraph2D
         graphData={{ nodes, links }}
         nodeAutoColorBy="state"
-        linkDirectionalArrowLength={4}
         linkDirectionalArrowRelPos={1}
+        linkDirectionalArrowLength={(link) => (link.activated ? 7 : 5)}
         linkColor={(link) => (link.activated ? "#28a745" : "#000")} // green if activated
+        linkWidth={(link) => (link.activated ? 4 : 2)} // thicker if activated
+
         nodeCanvasObject={(node, ctx, globalScale) => {
           const radius = 5;
           const fontSize = 10 / globalScale;

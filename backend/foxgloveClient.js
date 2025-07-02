@@ -17,7 +17,7 @@ function setBroadcast(fn) {
   });
 }
 
-function startFoxgloveClient(sessionId) {
+async function startFoxgloveClient(sessionId) {
   if (activeClients.has(sessionId.toString())) {
     console.log(`[FoxgloveClient] Session ${sessionId} already listening`);
     return;
@@ -74,8 +74,8 @@ function startFoxgloveClient(sessionId) {
           }
 
           // Queue graph-related processing instead of direct function calls
-          if (["RUNNER_DEFINE", "RUNNER_EVENT"].includes(decoded.type)) {
-            graphQueueManager.addToQueue(decoded, sessionId);
+          if (["RUNNER_DEFINE", "RUNNER_EVENT"].includes(event.type)) {
+            graphQueueManager.addToQueue(event, sessionId);
           }
         })
         .catch((err) =>

@@ -2,6 +2,7 @@ const {
 	createGraphForSession,
 	finalizeGraphForSession,
 	updateGraphWithRunnerEvent,
+	updateGraphNumbers,
 	getActiveGraphKey, } = require("./graphManage")
 
 const runnerQueues = new Map(); // sessionId => { define: [], event: [] }
@@ -17,21 +18,22 @@ function setGraphBroadcast(fn) {
 	broadcastGraphFn = fn;
 }
 
-/** Adds an event to the processing queue for a specific session.
- * 
- * @param {Object} event - The event to add to the queue.
- * @param {string} sessionId - The ID of the session to which the event belongs.
- * 
- * This function categorizes the event into either 'define' or 'event' queues
- * based on the event type. It then processes the queues to ensure
- * that the graph is updated accordingly.
- * @returns {void}
- */
-function addToQueue(event, sessionId) {
+async function addToQueue(event, sessionId) {
+	const keyTest = getActiveGraphKey(sessionId);
+
+	if (!keyTest) {
+		console.warn(`[QueueProcessor] No active graph key for session ${sessionId} so creating a new one.`);
+		await updateGraphNumbers(sessionId);
+	}
+
 	const key = getActiveGraphKey(sessionId);
 
 	if (!runnerQueues.has(key)) {
-		runnerQueues.set(key, { define: [], event: [], processing: false });
+		runnerQueues.set(key, {
+			define: [],
+			event: [],
+			processing: false
+		});
 	}
 
 	if (!event || typeof event.type !== "string") return;
@@ -44,46 +46,52 @@ function addToQueue(event, sessionId) {
 		queues.event.push(event);
 	}
 
-	processQueues(sessionId);
+	await processQueues(sessionId);
 }
 
-/** 
- * Processes the queues for a specific session.
- * This function checks if there are events in the define or event queues 
- * and processes them accordingly.
- * 
- * @param {string} sessionId - The ID of the session to process queues for.
- * @returns {Promise<void>} - A promise that resolves when the queues are processed.
- * 
- * It finalizes the graph if there are define events and processes each event
- * in the event queue, updating the graph and broadcasting updates as necessary.
- */
 async function processQueues(sessionId) {
-	const graphKey = getActiveGraphKey(sessionId);
-	const queues = runnerQueues.get(graphKey);
+	const key = getActiveGraphKey(sessionId);
+
+	const queues = runnerQueues.get(key);
 	if (!queues || queues.processing) return;
 
 	queues.processing = true;
 
 	try {
-		if (queues.define.length && queues.event.length === 1) {
-			await finalizeGraphForSession(sessionId);
-
-			const newGraph = await createGraphForSession(sessionId);
+		if (queues.define.length > 0 && queues.event.length === 1) {
+			const newGraph = await createGraphForSession(sessionId, queues.define);
 
 			if (broadcastGraphFn && newGraph) {
 				broadcastGraphFn({ type: "GRAPH_UPDATE", graph: newGraph });
 			}
+
+			queues.define = [];
 		}
 
 		while (queues.event.length > 0) {
 			const evt = queues.event.shift();
 
-			const updatedGraph = await updateGraphWithRunnerEvent(evt, sessionId);
+			const updatedGraph = await updateGraphWithRunnerEvent(sessionId, evt);
 
 			if (broadcastGraphFn && updatedGraph) {
 				broadcastGraphFn({ type: "GRAPH_UPDATE", graph: updatedGraph });
 			}
+		}
+
+		if (queues.define.length === 1 && queues.event.length === 0) {
+			await finalizeGraphForSession(sessionId);
+
+			const newKey = getActiveGraphKey(sessionId);
+
+			runnerQueues.set(newKey, {
+				define: [],
+				event: [],
+				processing: false
+			});
+
+			const newQueues = runnerQueues.get(newKey);
+
+			newQueues.define = queues.define.slice(0, 1);
 		}
 	} catch (err) {
 		console.error(`[QueueProcessor] ❌ Error: ${err.message}`);

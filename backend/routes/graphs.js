@@ -25,4 +25,32 @@ router.get("/:sessionId", async (req, res) => {
 });
 
 
+router.get("/:sessionId/count", async (req, res) => {
+  try {
+    const count = await Graph.countDocuments({ session: req.params.sessionId });
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get("/:sessionId/:index", async (req, res) => {
+  const { sessionId, index } = req.params;
+  try {
+    const graph = await Graph.findOne({ session: sessionId })
+      .sort({ graphNo: 1 })
+      .skip(Number(index))
+      .limit(1);
+
+    if (!graph) return res.status(404).json({ message: "Graph not found" });
+
+    res.json(graph);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+
 module.exports = router;
