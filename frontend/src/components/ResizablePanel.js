@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
-import "./ResizableBottomPanel.css";
+import "./ResizablePanel.css";
 
-function ResizableBottomPanel({ topContent, bottomContent, minHeight = 100, defaultHeight = 200 }) {
+function ResizablePanel({ topContent, leftContent, rightContent, minHeight = 100, defaultHeight = 235 }) {
   const [height, setHeight] = useState(defaultHeight);
   const isDragging = useRef(false);
 
@@ -22,21 +22,17 @@ function ResizableBottomPanel({ topContent, bottomContent, minHeight = 100, defa
   };
 
   return (
-    <div
-      className="bottom-panel-layout"
-      onMouseMove={handleMouseMove}
-      onMouseUp={stopDragging}
-      onMouseLeave={stopDragging}
-    >
+    <div className="bottom-panel-layout" onMouseMove={handleMouseMove} onMouseUp={stopDragging} onMouseLeave={stopDragging}>
       <div className="top-section" style={{ height: `calc(100% - ${height}px)` }}>
-        {topContent /* ✅ show top panel */}
+        {topContent}
       </div>
       <div className="horizontal-resizer" onMouseDown={startDragging} />
-      <div className="bottom-panel" style={{ height: `${height}px` }}>
-        {bottomContent /* ✅ show bottom panel */}
+      <div className="bottom-panel" style={{ height: `${height}px`, display: "flex" }}>
+        <div className="bottom-left">{leftContent}</div>
+        <div className="bottom-right">{rightContent}</div>
       </div>
     </div>
   );
 }
 
-export default ResizableBottomPanel;
+export default ResizablePanel;

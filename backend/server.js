@@ -6,6 +6,8 @@ const WebSocket = require("ws");
 
 const sessionRoutes = require("./routes/sessions");
 const eventRoutes = require("./routes/events");
+const graphRoutes = require("./routes/graphs");
+
 const { setBroadcast } = require("./foxgloveClient");
 const sanitizeEvent = require("./utils/sanitizeEvent"); // ✅ import
 
@@ -18,6 +20,7 @@ app.use(express.json());
 
 app.use("/api/sessions", sessionRoutes);
 app.use("/api/events", eventRoutes);
+app.use("/api/graphs", graphRoutes);
 
 mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/capabilities2", {
   useNewUrlParser: true,

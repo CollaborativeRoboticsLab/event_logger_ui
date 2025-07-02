@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import EventItem from "./EventItem";
 import "./EventList.css";
 
-const EVENT_TYPES = ["INFO", "DEBUG", "ERROR", "ERROR_ELEMENT", "DEFINE_EVENT"];
+const EVENT_TYPES = ["INFO", "DEBUG", "ERROR", "ERROR_ELEMENT", "RUNNER_DEFINE", "RUNNER_EVENT"];
 
 function EventList({ events, disabled = false  }) {
   const [selectedTypes, setSelectedTypes] = useState(EVENT_TYPES);
@@ -47,7 +47,7 @@ function EventList({ events, disabled = false  }) {
           <table className="filter-table">
             <tbody>
               <tr>
-                <td><strong>Message Types</strong></td>
+                <td><strong>Types</strong></td>
                 <td>
                   <div className="checkbox-column">
                     {EVENT_TYPES.map((type) => (

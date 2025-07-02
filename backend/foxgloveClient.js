@@ -2,16 +2,22 @@ const { FoxgloveClient } = require("@foxglove/ws-protocol");
 const WebSocket = require("ws");
 const Event = require("./models/Event");
 const decoders = require("./decoders");
-const sanitizeEvent = require("./utils/sanitizeEvent"); // ✅ Import the sanitizer
+const sanitizeEvent = require("./utils/sanitizeEvent");
+const graphQueueManager = require("./utils/graphQueueManager");
+const { setGraphBroadcast } = require("./utils/graphQueueManager");
 
 let activeClients = new Map();
 let broadcastFn = null;
 
 function setBroadcast(fn) {
   broadcastFn = fn;
+
+  setGraphBroadcast((graphPayload) => {
+    if (broadcastFn) broadcastFn(graphPayload);
+  });
 }
 
-function startFoxgloveClient(sessionId) {
+async function startFoxgloveClient(sessionId) {
   if (activeClients.has(sessionId.toString())) {
     console.log(`[FoxgloveClient] Session ${sessionId} already listening`);
     return;
@@ -62,12 +68,19 @@ function startFoxgloveClient(sessionId) {
       event
         .save()
         .then((saved) => {
-          const sanitized = sanitizeEvent(saved); // ✅ Remove _id, timestamps, etc.
+          const sanitized = sanitizeEvent(saved);
           if (broadcastFn) {
             broadcastFn(sanitized);
           }
+
+          // Queue graph-related processing instead of direct function calls
+          if (["RUNNER_DEFINE", "RUNNER_EVENT"].includes(event.type)) {
+            graphQueueManager.addToQueue(event, sessionId);
+          }
         })
-        .catch((err) => console.error("[FoxgloveClient] ❌ Failed to save event:", err.message));
+        .catch((err) =>
+          console.error("[FoxgloveClient] ❌ Failed to save event:", err.message)
+        );
     });
 
     client.on("error", (err) => {
@@ -84,4 +97,7 @@ function startFoxgloveClient(sessionId) {
   tryConnect();
 }
 
-module.exports = { startFoxgloveClient, setBroadcast };
+module.exports = {
+  startFoxgloveClient,
+  setBroadcast
+};

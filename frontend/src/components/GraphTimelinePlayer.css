@@ -1,0 +1,32 @@
+.graph-timeline-container {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex: 1;
+}
+
+.graph-timeline-container canvas {
+  display: block;
+}
+
+.floating-left,
+.floating-right {
+  position: absolute;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 8px 12px;
+  border-radius: 8px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+}
+
+.floating-left {
+  left: 10px;
+}
+
+.floating-right {
+  right: 10px;
+}

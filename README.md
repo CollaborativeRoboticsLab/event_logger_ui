@@ -37,6 +37,21 @@ echo "MONGO_URI=mongodb://localhost:27017/capabilities2" > .env
 node server.js
 ```
 
+If the backend does not start properly (fails to connect with mongodb) run the following commands
+
+```sh
+sudo rm -f /tmp/mongodb-27017.sock
+sudo systemctl start mongod
+sudo systemctl status mongod
+```
+
+and then retry the server
+
+```sh
+node server.js
+```
+
+
 ### 4. Frontend
 
 ```bash

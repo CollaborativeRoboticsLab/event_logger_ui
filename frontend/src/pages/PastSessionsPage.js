@@ -1,55 +1,105 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import EventList from "../components/EventList";
-import ResizableLeftPanel from "../components/ResizableLeftPanel";
-import ResizableBottomPanel from "../components/ResizableBottomPanel";
-import ResizableMainArea from "../components/ResizableMainArea";
+import GraphTimelinePlayer from "../components/GraphTimelinePlayer";
+import ResizablePanel from "../components/ResizablePanel";
+import SessionSelector from "../components/SessionSelector";
+import SessionControl from "../components/SessionControl";
 import "./PastSessionsPage.css";
 
 function PastSessionsPage() {
   const [sessions, setSessions] = useState([]);
-  const [selected, setSelected] = useState(null);
+  const [selectedSession, setSelectedSession] = useState(null);
   const [events, setEvents] = useState([]);
+  const [graphs, setGraphs] = useState([]);
+  const [graphIndex, setGraphIndex] = useState(0);
 
   useEffect(() => {
-    axios.get("http://localhost:5000/api/sessions")
+    axios
+      .get("http://localhost:5000/api/sessions")
       .then((res) => setSessions(res.data))
       .catch((err) => console.error("Failed to load sessions", err));
   }, []);
 
   useEffect(() => {
-    if (!selected) return;
-    axios.get(`http://localhost:5000/api/events?session=${selected._id}`)
+    if (!selectedSession) return;
+
+    // Load past events
+    axios
+      .get(`http://localhost:5000/api/events?session=${selectedSession._id}`)
       .then((res) => setEvents(res.data))
       .catch((err) => console.error("Failed to load session events", err));
-  }, [selected]);
 
-  const LeftPanelContent = (
-    <div>
-      <h3>Load Past Session</h3>
-      {sessions.map((s) => (
-        <div key={s._id} onClick={() => setSelected(s)} className="session-list-item">
-          <strong>{s.name}</strong> #{s.serial}<br />
-          <small>{new Date(s.createdAt).toLocaleString()}</small>
-        </div>
-      ))}
-    </div>
-  );
+    // Load past graphs
+    // Get graph count first
+    axios
+      .get(`http://localhost:5000/api/graphs/${selectedSession._id}/count`)
+      .then((res) => {
+        const count = res.data.count;
+        setGraphs(Array(count).fill(null)); // Placeholder
+        setGraphIndex(0);
+        // Load the first graph
+        fetchGraphByIndex(0, selectedSession._id);
+      })
+      .catch((err) => console.error("Failed to load graph count", err));
+  }, [selectedSession]);
 
-  const BottomContent = (
-    <EventList events={events} disabled={!selected} />
-  );
+
+  const fetchGraphByIndex = (index, sessionId) => {
+    axios
+      .get(`http://localhost:5000/api/graphs/${sessionId}/${index}`)
+      .then((res) => {
+        setGraphs((prev) => {
+          const updated = [...prev];
+          updated[index] = res.data;
+          return updated;
+        });
+      })
+      .catch((err) => console.error(`Failed to load graph at index ${index}`, err));
+  };
+
+  const currentGraph = graphs[graphIndex];
 
   return (
     <div className="page-layout">
-      <ResizableLeftPanel>
-        {LeftPanelContent}
-      </ResizableLeftPanel>
-
-      <div className="main-right">
-        <ResizableBottomPanel
-          topContent={<ResizableMainArea />}
-          bottomContent={BottomContent}
+      <div className="main-content">
+        <ResizablePanel
+          topContent={
+            <div style={{ position: "relative", height: "100%" }}>
+              {currentGraph ? (
+                <>
+                  <GraphTimelinePlayer graph={currentGraph} />
+                  <SessionControl
+                    graphIndex={graphIndex}
+                    graphCount={graphs.length}
+                    currentGraph={currentGraph}
+                    onPrev={() => {
+                      const newIndex = graphIndex - 1;
+                      setGraphIndex(newIndex);
+                      if (!graphs[newIndex]) fetchGraphByIndex(newIndex, selectedSession._id);
+                    }}
+                    onNext={() => {
+                      const newIndex = graphIndex + 1;
+                      setGraphIndex(newIndex);
+                      if (!graphs[newIndex]) fetchGraphByIndex(newIndex, selectedSession._id);
+                    }}
+                  />
+                </>
+              ) : (
+                <p style={{ padding: "1rem" }}>No graph available for this session.</p>
+              )}
+            </div>
+          }
+          leftContent={
+            <SessionSelector
+              sessions={sessions}
+              selectedSession={selectedSession}
+              onSelect={setSelectedSession}
+            />
+          }
+          rightContent={
+            <EventList events={events} disabled={!selectedSession} />
+          }
         />
       </div>
     </div>
