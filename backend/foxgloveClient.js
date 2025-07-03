@@ -26,10 +26,10 @@ async function startFoxgloveClient(sessionId) {
   console.log(`[FoxgloveClient] Starting client for session: ${sessionId}`);
 
   const tryConnect = () => {
-    console.log("[FoxgloveClient] Attempting to connect to ws://0.0.0.0:8765...");
+    console.log("[FoxgloveClient] Attempting to connect to ws://localhost:8765...");
 
     const client = new FoxgloveClient({
-      ws: new WebSocket("ws://0.0.0.0:8765", [FoxgloveClient.SUPPORTED_SUBPROTOCOL]),
+      ws: new WebSocket(process.env.ROSBRIDGE_URL || "ws://localhost:8765", [FoxgloveClient.SUPPORTED_SUBPROTOCOL]),
     });
 
     const deserializers = new Map();

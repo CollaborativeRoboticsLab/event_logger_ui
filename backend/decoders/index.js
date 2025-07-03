@@ -1,5 +1,5 @@
 module.exports = {
-  "/events": require("./capabilitiesEventDecoder"),
+  "/events": require("./EventDecoder"),
 
   // future topics can be added like:
   // "/sensor_data": require("./sensorDataDecoder"),

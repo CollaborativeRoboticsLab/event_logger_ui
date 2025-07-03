@@ -12,7 +12,6 @@ function CurrentSessionPage() {
   const [graphNodes, setGraphNodes] = useState([]);
   const [graphEdges, setGraphEdges] = useState([]);
 
-  // Load saved session on mount
   useEffect(() => {
     const saved = localStorage.getItem("liveSession");
     if (saved) {
@@ -21,7 +20,6 @@ function CurrentSessionPage() {
     }
   }, []);
 
-  // Load events for resumed session
   useEffect(() => {
     if (!session || session.isNewSession) return;
 
@@ -31,7 +29,6 @@ function CurrentSessionPage() {
       .catch((err) => console.error("Failed to load events:", err));
   }, [session]);
 
-  // Live session WebSocket
   useEffect(() => {
     if (!session || !session.isNewSession) return;
 
@@ -44,32 +41,74 @@ function CurrentSessionPage() {
       if (message.type === "GRAPH_UPDATE") {
         const { graph } = message;
 
-        if (!graph) {
-          console.warn("GRAPH_UPDATE received with no graph data:", message);
+        if (!graph || !graph.nodes || !graph.edges) {
+          console.warn("GRAPH_UPDATE received with incomplete graph data:", message);
           return;
         }
 
-        // Convert nodeId → string ID format
+        const eventLog = graph.eventLog || [];
         const nodeMap = new Map();
-        const convertedNodes = graph.nodes.map(n => {
-          const id = `${n.capability}:${n.provider}`;
-          nodeMap.set(n.nodeId, id);
-          return {
+        const edgeMap = new Map();
+
+        if (eventLog.length === 0) {
+          const idleNodes = graph.nodes.map((n) => ({
             ...n,
-            id,
+            id: n.nodeId,
             state: "idle",
-          };
-        });
+          }));
+          const baseEdges = graph.edges.map((e) => ({
+            ...e,
+            source: e.sourceNodeID,
+            target: e.targetNodeID,
+            activated: 0,
+          }));
 
-        const convertedEdges = graph.edges.map(e => ({
-          ...e,
-          source: nodeMap.get(e.sourceNodeID),
-          target: nodeMap.get(e.targetNodeID),
-          activated: 0,
-        }));
+          setGraphNodes(idleNodes);
+          setGraphEdges(baseEdges);
+          return;
+        }
 
-        setGraphNodes(convertedNodes);
-        setGraphEdges(convertedEdges);
+        for (const entry of eventLog) {
+          // Handle node state
+          if (entry.nodeId !== null) {
+            let node = nodeMap.get(entry.nodeId);
+            if (!node) {
+              const orig = graph.nodes.find((n) => n.nodeId === entry.nodeId);
+              if (orig) {
+                node = {
+                  ...orig,
+                  id: orig.nodeId,
+                  state: entry.nodeState || "idle",
+                };
+                nodeMap.set(entry.nodeId, node);
+              }
+            } else if (entry.nodeState) {
+              node.state = entry.nodeState;
+            }
+          }
+
+          // Handle edge state
+          if (entry.edgeId !== null) {
+            let edge = edgeMap.get(entry.edgeId);
+            if (!edge) {
+              const orig = graph.edges.find((e) => e.edgeId === entry.edgeId);
+              if (orig) {
+                edge = {
+                  ...orig,
+                  source: orig.sourceNodeID,
+                  target: orig.targetNodeID,
+                  activated: entry.edgeState ? 1 : 0,
+                };
+                edgeMap.set(entry.edgeId, edge);
+              }
+            } else if (entry.edgeState) {
+              edge.activated += 1;
+            }
+          }
+        }
+
+        setGraphNodes([...nodeMap.values()]);
+        setGraphEdges([...edgeMap.values()]);
       } else {
         setEvents((prev) => [message, ...prev]);
       }

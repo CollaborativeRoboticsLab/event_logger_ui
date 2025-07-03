@@ -19,7 +19,7 @@ const TYPE_ENUM_MAP = {
   5: "RUNNER_EVENT",
 };
 
-function decodeCapabilityEvent(data) {
+function decodeEvent(data) {
   const reader = new CdrReader(data);
   try {
     const header = {
@@ -69,4 +69,4 @@ function decodeCapabilityEvent(data) {
   }
 }
 
-module.exports = decodeCapabilityEvent;
+module.exports = decodeEvent;

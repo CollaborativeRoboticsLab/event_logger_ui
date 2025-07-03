@@ -25,8 +25,12 @@ RUN rm -rf /usr/share/nginx/html/*
 # Copy built React app to Nginx static folder
 COPY --from=builder /app/build /usr/share/nginx/html
 
+# Use custom config
+RUN rm /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 # Expose default HTTP port
-EXPOSE 80
+EXPOSE 3000
 
 # Run Nginx in the foreground
 CMD ["nginx", "-g", "daemon off;"]
