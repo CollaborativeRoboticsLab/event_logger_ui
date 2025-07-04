@@ -13,6 +13,7 @@ ENV WORKSPACE_ROOT=/foxglove
 RUN apt-get update
 
 RUN apt-get install -y --no-install-recommends  python3-pip \
+                                                git \
                                                 python3-colcon-common-extensions \
                                                 ros-$ROS_DISTRO-foxglove-bridge \
                                                 ros-$ROS_DISTRO-rmw-cyclonedds-cpp
@@ -23,12 +24,13 @@ RUN apt-get install -y --no-install-recommends  python3-pip \
 #---------------------------------------------------
 WORKDIR ${WORKSPACE_ROOT}/src
 
-COPY ros2-client/ ./ 
+COPY ros2-client/ ros2-client/
+
 RUN git clone https://github.com/CollaborativeRoboticsLab/event_logger.git
 
-RUN rosdep install --from-paths ${WORKSPACE_ROOT}/src -y --ignore-src
-
 WORKDIR ${WORKSPACE_ROOT}
+
+RUN rosdep install --from-paths src -y --ignore-src
 
 RUN . /opt/ros/humble/setup.sh && colcon build
 
