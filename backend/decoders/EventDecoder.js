@@ -32,17 +32,10 @@ function decodeEvent(data) {
 
     const origin_node = reader.string();
 
-    const source = {
-      capability: reader.string(),
-      provider: reader.string(),
-      parameters: reader.string(),
-    };
-
-    const target = {
-      capability: reader.string(),
-      provider: reader.string(),
-      parameters: reader.string(),
-    };
+    const source_capability = reader.string();
+    const source_provider = reader.string();
+    const target_capability = reader.string();
+    const target_provider = reader.string();
 
     const thread_id = reader.int8();
 
@@ -55,8 +48,14 @@ function decodeEvent(data) {
     return {
       header,
       origin_node,
-      source,
-      target,
+      source :{
+        capability: source_capability,
+        provider: source_provider,
+      },
+      target: {
+        capability: target_capability,
+        provider: target_provider,
+      },
       thread_id,
       event: EVENT_ENUM_MAP[eventNum] || "UNDEFINED",
       type: TYPE_ENUM_MAP[typeNum] || "INFO",

@@ -301,28 +301,28 @@ async function updateGraphWithRunnerEvent(sessionId, event) {
 
   if (event.type === "RUNNER_EVENT") {
     if (!sourceCapability || !sourceProvider || !targetCapability || !targetProvider) {
-      console.warn(`[GraphUpdater] Invalid event data for session ${sessionKey}:`, event);
+      console.warn(`[GraphUpdater] Invalid event data for session ${sessionId}:`, event);
       return;
     }
 
     if (graph.nodes.some(node => node.capability === sourceCapability && node.provider === sourceProvider)) {
       sourceNodeID = graph.nodes.find(node => node.capability === sourceCapability && node.provider === sourceProvider).nodeId;
     } else {
-      console.warn(`[GraphUpdater] Source node not found in graph for session ${sessionKey}`);
+      console.warn(`[GraphUpdater] Source node not found in graph for session ${sessionId}`);
       return;
     }
 
     if (graph.nodes.some(node => node.capability === targetCapability && node.provider === targetProvider)) {
       targetNodeID = graph.nodes.find(node => node.capability === targetCapability && node.provider === targetProvider).nodeId;
     } else {
-      console.warn(`[GraphUpdater] Target node not found in graph for session ${sessionKey}`);
+      console.warn(`[GraphUpdater] Target node not found in graph for session ${sessionId}`);
       return;
     }
 
     if (sourceNodeID !== null || targetNodeID !== null) {
       edgeID = graph.edges.find(edge => edge.sourceNodeID === sourceNodeID && edge.targetNodeID === targetNodeID)?.edgeId;
       if (edgeID === undefined) {
-        console.warn(`[GraphUpdater] Edge not found in graph for session ${sessionKey}:`,
+        console.warn(`[GraphUpdater] Edge not found in graph for session ${sessionId}:`,
           `sourceNodeID=${sourceNodeID}, targetNodeID=${targetNodeID}`);
         return;
       }
@@ -350,7 +350,7 @@ async function updateGraphWithRunnerEvent(sessionId, event) {
       edgeActivated = true;
     } else {
       // Handle other events or default case
-      console.warn(`[GraphUpdater] Unknown event type for session ${sessionKey}:`, event.event);
+      console.warn(`[GraphUpdater] Unknown event type for session ${sessionId}:`, event.event);
       return;
     }
 

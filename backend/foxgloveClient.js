@@ -84,7 +84,7 @@ async function startFoxgloveClient(sessionId) {
     });
 
     client.on("error", (err) => {
-      console.error(`[FoxgloveClient] ❌ WebSocket error: ${err.message}`);
+      console.error(`[FoxgloveClient] ❌ WebSocket error for session ${sessionId}: ${err.message}`);
     });
 
     client.on("close", () => {
