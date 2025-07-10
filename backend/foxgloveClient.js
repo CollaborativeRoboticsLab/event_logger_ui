@@ -75,7 +75,7 @@ async function startFoxgloveClient(sessionId) {
 
           // Queue graph-related processing instead of direct function calls
           if (["RUNNER_DEFINE", "RUNNER_EVENT"].includes(event.type)) {
-            graphQueueManager.addToQueue(event, sessionId);
+            graphQueueManager.process(event, sessionId);
           }
         })
         .catch((err) =>

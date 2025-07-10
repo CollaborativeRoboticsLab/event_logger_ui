@@ -55,7 +55,8 @@ def generate_launch_description():
             'asset_uri_allowlist': LaunchConfiguration('asset_uri_allowlist'),
             'ignore_unresponsive_param_nodes': LaunchConfiguration('ignore_unresponsive_param_nodes'),
         }],
-        output='screen'
+        output='screen',
+        arguments=['--ros-args', '--log-level', 'info']
     )
 
     return LaunchDescription(launch_args + [foxglove_bridge_node])

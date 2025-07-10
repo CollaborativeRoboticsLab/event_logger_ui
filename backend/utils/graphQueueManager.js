@@ -5,8 +5,9 @@ const {
 	updateGraphNumbers,
 	getActiveGraphKey, } = require("./graphManage")
 
-const runnerQueues = new Map(); // sessionId => { define: [], event: [] }
+const sessionQueues = new Map(); // sessionId => { define: [], event: [] }
 let broadcastGraphFn = null;
+
 
 /** Sets the function to broadcast graph updates.
  * @param {Function} fn - The function to call when broadcasting graph updates.
@@ -16,6 +17,30 @@ let broadcastGraphFn = null;
  */
 function setGraphBroadcast(fn) {
 	broadcastGraphFn = fn;
+}
+
+async function process(event, sessionId) {
+	if (!sessionId) {
+		console.warn("[QueueProcessor] No session ID provided, cannot process event.");
+		return;
+	}
+
+	if (!sessionQueues.has(sessionId)) {
+		sessionQueues.set(sessionId, {
+			queue: [],
+			process_state: "IDLE" // IDLE, DEFINE, EVENT
+		});
+	}
+
+	const queues = sessionQueues.get(sessionId);
+
+	if (event.type === "RUNNER_DEFINE") {
+		queues.define.push(event);
+	} else if (event.type === "RUNNER_EVENT") {
+		queues.event.push(event);
+	}
+
+	await processQueues(sessionId);
 }
 
 async function addToQueue(event, sessionId) {
@@ -101,6 +126,6 @@ async function processQueues(sessionId) {
 }
 
 module.exports = {
-	addToQueue,
+	process,
 	setGraphBroadcast,
 };

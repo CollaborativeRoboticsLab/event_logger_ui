@@ -17,11 +17,13 @@ const eventSchema = new mongoose.Schema({
   source: {
     capability: String,
     provider: String,
+    parameters: String,
   },
 
   target: {
     capability: String,
     provider: String,
+    parameters: String,
   },
 
   thread_id: Number,

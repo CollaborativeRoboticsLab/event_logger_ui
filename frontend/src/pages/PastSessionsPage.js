@@ -35,6 +35,7 @@ function PastSessionsPage() {
     axios
       .get(`http://localhost:5000/api/graphs/${selectedSession._id}/count`)
       .then((res) => {
+        console.log("Graph count response:", res.data); // Add this
         const count = res.data.count;
         setGraphs(Array(count).fill(null)); // Placeholder
         setGraphIndex(0);
