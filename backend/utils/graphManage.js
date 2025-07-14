@@ -382,6 +382,4 @@ module.exports = {
   createGraphForSession,
   finalizeGraphForSession,
   updateGraphWithRunnerEvent,
-  updateGraphNumbers,
-  getActiveGraphKey,
 };

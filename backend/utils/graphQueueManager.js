@@ -1,13 +1,10 @@
 const {
 	createGraphForSession,
 	finalizeGraphForSession,
-	updateGraphWithRunnerEvent,
-	updateGraphNumbers,
-	getActiveGraphKey, } = require("./graphManage")
+	updateGraphWithRunnerEvent,} = require("./graphManage")
 
 const sessionQueues = new Map(); // sessionId => { define: [], event: [] }
 let broadcastGraphFn = null;
-
 
 /** Sets the function to broadcast graph updates.
  * @param {Function} fn - The function to call when broadcasting graph updates.
@@ -20,109 +17,110 @@ function setGraphBroadcast(fn) {
 }
 
 async function process(event, sessionId) {
+	// Validate the sessionId and event.
 	if (!sessionId) {
 		console.warn("[QueueProcessor] No session ID provided, cannot process event.");
 		return;
 	}
 
+	// Initialize the session queue if it doesn't exist.
 	if (!sessionQueues.has(sessionId)) {
 		sessionQueues.set(sessionId, {
 			queue: [],
+			define: [],
+			processing: false,
 			process_state: "IDLE" // IDLE, DEFINE, EVENT
 		});
 	}
 
-	const queues = sessionQueues.get(sessionId);
-
-	if (event.type === "RUNNER_DEFINE") {
-		queues.define.push(event);
-	} else if (event.type === "RUNNER_EVENT") {
-		queues.event.push(event);
-	}
-
-	await processQueues(sessionId);
-}
-
-async function addToQueue(event, sessionId) {
-	const keyTest = getActiveGraphKey(sessionId);
-
-	if (!keyTest) {
-		console.warn(`[QueueProcessor] No active graph key for session ${sessionId} so creating a new one.`);
-		await updateGraphNumbers(sessionId);
-	}
-
-	const key = getActiveGraphKey(sessionId);
-
-	if (!runnerQueues.has(key)) {
-		runnerQueues.set(key, {
-			define: [],
-			event: [],
-			processing: false
-		});
-	}
-
+	// Check if the event is valid.
 	if (!event || typeof event.type !== "string") return;
 
-	const queues = runnerQueues.get(key);
+	// Retrieve the queue for the given session ID.
+	const queue = sessionQueues.get(sessionId);
 
-	if (event.type === "RUNNER_DEFINE") {
-		queues.define.push(event);
-	} else if (event.type === "RUNNER_EVENT") {
-		queues.event.push(event);
+	// Push the event into the queue based on if it is a RUNNER_DEFINE or RUNNER_EVENT.
+	if (event.type === "RUNNER_DEFINE" || event.type === "RUNNER_EVENT") {
+		queue.queue.push(event);
 	}
 
 	await processQueues(sessionId);
 }
 
 async function processQueues(sessionId) {
-	const key = getActiveGraphKey(sessionId);
+	// Retrieve the queues for the given session ID.
+	const queue = sessionQueues.get(sessionId);
 
-	const queues = runnerQueues.get(key);
-	if (!queues || queues.processing) return;
+	// If the queue is already processing, return early to avoid re-entrancy issues.
+	if (!queue || queue.processing) return;
 
-	queues.processing = true;
+	// Set the queue to processing state.
+	queue.processing = true;
 
-	try {
-		if (queues.define.length > 0 && queues.event.length === 1) {
-			const newGraph = await createGraphForSession(sessionId, queues.define);
+	for (let index = 0; index < queue.queue.length; index++) {
+		const element = array[index];
 
-			if (broadcastGraphFn && newGraph) {
-				broadcastGraphFn({ type: "GRAPH_UPDATE", graph: newGraph });
+		try {
+			if (queue.process_state === "IDLE" && element.type === "RUNNER_DEFINE") {
+				queue.process_state = "DEFINE";
+
+				// If we are coming from IDLE state and get RUNNER_DEFINE, push the event into define queue
+				queue.define.push(element);
+
+			} else if (queue.process_state === "DEFINE" && element.type === "RUNNER_DEFINE") {
+				queue.process_state = "DEFINE";
+
+				// If we are in DEFINE and still getting RUNNER_DEFINE, push the event into define queue
+				queue.define.push(element);
+
+			} else if (queue.process_state === "DEFINE" && element.type === "RUNNER_EVENT") {
+				queue.process_state = "EVENT";
+
+				// If we are in DEFINE state and RUNNER_EVENT are starting, create the graph with define queue
+				const newGraph = await createGraphForSession(sessionId, queue.define);
+
+				if (broadcastGraphFn && newGraph) {
+					broadcastGraphFn({ type: "GRAPH_UPDATE", graph: newGraph });
+				}
+
+				// Empty the define queue after creating the graph
+				queue.define.length = 0;
+
+				// update the graph with event
+				const updatedGraph = await updateGraphWithRunnerEvent(sessionId, element);
+
+				if (broadcastGraphFn && updatedGraph) {
+					broadcastGraphFn({ type: "GRAPH_UPDATE", graph: updatedGraph });
+				}
+
+			} else if (queue.process_state === "EVENT" && element.type === "RUNNER_EVENT") {
+				queue.process_state = "EVENT";
+
+				// If we are in EVENT state and getting RUNNER_EVENT, update the graph with the event				// update the graph with event
+				const updatedGraph = await updateGraphWithRunnerEvent(sessionId, element);
+
+				if (broadcastGraphFn && updatedGraph) {
+					broadcastGraphFn({ type: "GRAPH_UPDATE", graph: updatedGraph });
+				}
+
+			} else if (queue.process_state === "EVENT" && element.type === "RUNNER_DEFINE") {
+				queue.process_state = "DEFINE";
+
+				// If we are in EVENT state and getting RUNNER_DEFINE, finalize the graph for the session
+				await finalizeGraphForSession(sessionId);
+				
+				// Add the RUNNER_DEFINE to the define queue
+				queue.define.push(element);
 			}
-
-			queues.define = [];
+		} catch (err) {
+			console.error(`[QueueProcessor] ❌ Error processing element: ${err.message}`);
+			queue.processing = false;
+			return;
 		}
-
-		while (queues.event.length > 0) {
-			const evt = queues.event.shift();
-
-			const updatedGraph = await updateGraphWithRunnerEvent(sessionId, evt);
-
-			if (broadcastGraphFn && updatedGraph) {
-				broadcastGraphFn({ type: "GRAPH_UPDATE", graph: updatedGraph });
-			}
-		}
-
-		if (queues.define.length === 1 && queues.event.length === 0) {
-			await finalizeGraphForSession(sessionId);
-
-			const newKey = getActiveGraphKey(sessionId);
-
-			runnerQueues.set(newKey, {
-				define: [],
-				event: [],
-				processing: false
-			});
-
-			const newQueues = runnerQueues.get(newKey);
-
-			newQueues.define = queues.define.slice(0, 1);
-		}
-	} catch (err) {
-		console.error(`[QueueProcessor] ❌ Error: ${err.message}`);
-	} finally {
-		queues.processing = false;
 	}
+
+	queue.queue.splice(0, queue.queue.length); // Clear the queue after processing
+	queue.processing = false;
 }
 
 module.exports = {
