@@ -57,9 +57,10 @@ async function processQueues(sessionId) {
 	// Set the queue to processing state.
 	queue.processing = true;
 
-	for (let index = 0; index < queue.queue.length; index++) {
-		const element = array[index];
+	const eventsToProcess = [...queue.queue]; // clone current queue
+	queue.queue.length = 0; 				  // clear early to avoid mid-loop appends
 
+	for (const element of eventsToProcess) {
 		try {
 			if (queue.process_state === "IDLE" && element.type === "RUNNER_DEFINE") {
 				queue.process_state = "DEFINE";
@@ -119,7 +120,6 @@ async function processQueues(sessionId) {
 		}
 	}
 
-	queue.queue.splice(0, queue.queue.length); // Clear the queue after processing
 	queue.processing = false;
 }
 

@@ -4,18 +4,24 @@ const Event = require("../models/Event");
 const activeGraphs = new Map(); // still exportable
 const graphNumbers = new Map(); // sessionId => graphId
 
-/** Sets the active graph number for a given session ID.
- * @param {string} sessionId - The ID of the session for which to set the active graph key.
- * @param {number} graphNo - The graph number to set as active for the session.
- * This function updates the activeGraphKeys map to associate the session ID with the specified graph number.
- */
-async function updateGraphNumbers(sessionId) {
-  const graphCount = await Graph.countDocuments({ session: sessionId });
-  graphNumbers.set(sessionId, graphCount + 1);
-
-  console.log(`[GraphManager] Updated graph number for session ${sessionId}: ${getGraphNumbers(sessionId)}`);
+function incrementGraphNumbers(sessionId) {
+  if (!graphNumbers.has(sessionId)) {
+    graphNumbers.set(sessionId, 1);
+    console.log(`[GraphManager] Initialized graph number for session ${sessionId}: 1`);
+  } else {
+    graphNumbers.set(sessionId, graphNumbers.get(sessionId) + 1);
+    console.log(`[GraphManager] Incremented graph number for session ${sessionId}: ${getGraphNumbers(sessionId)}`);
+  }
 }
 
+/** Retrieves the graph number for a given session ID.
+ * @param {string} sessionId - The ID of the session for which to get the
+ * active graph number.
+ * @returns {number|null} The active graph number for the session, or null if no
+ * active graph exists.
+ * This function checks the graphNumbers map for the session ID and returns the associated graph number.
+ * If no graph number is found, it returns null.
+ */
 function getGraphNumbers(sessionId) {
   return graphNumbers.get(sessionId) || null;
 }
@@ -58,25 +64,6 @@ function getActiveGraph(sessionId) {
     const graph = activeGraphs.get(key);
     return graph || null;
   }
-}
-
-/** Sets the active graph for a given session ID. 
- * This function updates the activeGraphs map to associate the session ID with the specified graph.
- * 
- * @param {string} sessionId - The ID of the session for which to set the active graph.
- * @param {Graph} graph - The graph to set as active for the session.
- * @returns {void}
- * 
- * This function retrieves the active graph key for the session and sets the graph in the activeGraphs map.
- * If no active graph key is found, it logs a warning.
- */
-function setActiveGraph(sessionId, graph) {
-  const key = getActiveGraphKey(sessionId);
-  if (!key) {
-    console.warn(`[GraphManager] No active graph key for session ${sessionId}`);
-    return;
-  }
-  activeGraphs.set(key, graph);
 }
 
 /** Generates a graph structure from a list of events. This function processes the events of 
@@ -211,8 +198,10 @@ async function createGraphForSession(sessionId, events) {
 
   const { nodes, edges, eventLog } = generateGraph(events);
 
-  const graphKey = getActiveGraphKey(sessionId);
+  incrementGraphNumbers(sessionId);
+
   const graphNumber = getGraphNumbers(sessionId);
+  const graphKey = getActiveGraphKey(sessionId);
 
   console.log("Graph data for graph:", graphKey);
   console.log("Nodes:", nodes);
@@ -230,7 +219,7 @@ async function createGraphForSession(sessionId, events) {
 
   await graph.save();
 
-  setActiveGraph(sessionId, graph);
+  activeGraphs.set(graphKey, graph);
 
   return graph;
 }
@@ -258,8 +247,6 @@ async function finalizeGraphForSession(sessionId) {
   activeGraphs.delete(key);
 
   console.log(`[GraphFinalizer] Finalized graph ${graph.graphId}`);
-
-  updateGraphNumbers(sessionId);
 }
 
 /** Updates the graph with a runner event.
