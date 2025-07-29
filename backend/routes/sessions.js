@@ -30,8 +30,8 @@ router.post("/", async (req, res) => {
     console.log("[Session API] Created new session:", saved);
 
     if (req.query.listen === "true") {
-      console.log("[Session API] Triggering FoxgloveClient for session with session id:", nextSerial);
-      startFoxgloveClient(nextSerial);
+      console.log("[Session API] Triggering FoxgloveClient for session with session id:", saved._id);
+      startFoxgloveClient(saved._id); // ✅ correct usage
     }
 
     res.status(201).json(saved);
