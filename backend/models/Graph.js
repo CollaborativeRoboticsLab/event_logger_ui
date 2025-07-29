@@ -35,4 +35,6 @@ const graphSchema = new mongoose.Schema({
   completedAt: Date,
 }, { timestamps: true });
 
+graphSchema.index({ session: 1, graphNo: 1 });
+
 module.exports = mongoose.model("Graph", graphSchema);

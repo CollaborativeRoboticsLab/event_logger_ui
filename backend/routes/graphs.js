@@ -17,7 +17,7 @@ router.post("/:sessionId/create", async (req, res) => {
 
 router.get("/:sessionId", async (req, res) => {
   try {
-    const graphs = await Graph.find({ session: req.params.sessionId }).sort({ graphNumber: 1 });
+    const graphs = await Graph.find({ session: req.params.sessionId }).sort({ graphNo: 1 });
     res.json(graphs);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -37,20 +37,18 @@ router.get("/:sessionId/count", async (req, res) => {
 router.get("/:sessionId/:index", async (req, res) => {
   const { sessionId, index } = req.params;
   try {
-    const graph = await Graph.findOne({ session: sessionId })
+    const graph = await Graph.find({ session: sessionId })
       .sort({ graphNo: 1 })
       .skip(Number(index))
       .limit(1);
 
-    if (!graph) return res.status(404).json({ message: "Graph not found" });
+    if (!graph || graph.length === 0) return res.status(404).json({ message: "Graph not found" });
 
-    res.json(graph);
+    res.json(graph[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
-
-
 
 
 module.exports = router;
