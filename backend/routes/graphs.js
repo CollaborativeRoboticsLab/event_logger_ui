@@ -8,6 +8,7 @@ router.post("/:sessionId/create", async (req, res) => {
     const { sessionId } = req.params;
     const graph = await createGraphForSession(sessionId);
     if (!graph) return res.status(404).json({ message: "No RUNNER_DEFINE events found" });
+    console.info("Graph creation sucess",sessionId);
     res.json(graph);
   } catch (err) {
     console.error("Graph creation failed", err.message);
@@ -17,7 +18,9 @@ router.post("/:sessionId/create", async (req, res) => {
 
 router.get("/:sessionId", async (req, res) => {
   try {
-    const graphs = await Graph.find({ session: req.params.sessionId }).sort({ graphNo: 1 });
+    const { sessionId } = req.params;
+    const graphs = await Graph.find({ session: sessionId }).sort({ graphNo: 1 });
+    console.info("All graph count ",graphs.length);
     res.json(graphs);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -27,7 +30,9 @@ router.get("/:sessionId", async (req, res) => {
 
 router.get("/:sessionId/count", async (req, res) => {
   try {
-    const count = await Graph.countDocuments({ session: req.params.sessionId });
+    const { sessionId } = req.params;
+    const count = await Graph.countDocuments({ session: sessionId });
+    console.info("Graph count for session", sessionId, "is", count);
     res.json({ count });
   } catch (err) {
     res.status(500).json({ error: err.message });
