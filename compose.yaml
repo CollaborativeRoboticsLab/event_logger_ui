@@ -1,0 +1,49 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: event_frontend
+    network_mode: host  
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: event_backend
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://localhost:27017/event_logger
+      - ROSBRIDGE_URL=ws://localhost:8765
+    network_mode: host
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:6
+    container_name: mongo_db
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    attach: false
+
+  rosbridge:
+    build:
+      context: ./ros2-client
+      dockerfile: Dockerfile
+    container_name: foxglove_bridge
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      - ROS_DOMAIN_ID=0
+      - port=8765
+      - address=0.0.0.0
+      - topic_whitelist=['/events']
+      - tls=false
+    attach: false
+
+
+volumes:
+  mongo_data:

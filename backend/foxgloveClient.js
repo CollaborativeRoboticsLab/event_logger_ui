@@ -26,10 +26,10 @@ async function startFoxgloveClient(sessionId) {
   console.log(`[FoxgloveClient] Starting client for session: ${sessionId}`);
 
   const tryConnect = () => {
-    console.log("[FoxgloveClient] Attempting to connect to ws://0.0.0.0:8765...");
+    console.log("[FoxgloveClient] Attempting to connect to ws://localhost:8765...");
 
     const client = new FoxgloveClient({
-      ws: new WebSocket("ws://0.0.0.0:8765", [FoxgloveClient.SUPPORTED_SUBPROTOCOL]),
+      ws: new WebSocket(process.env.ROSBRIDGE_URL || "ws://localhost:8765", [FoxgloveClient.SUPPORTED_SUBPROTOCOL]),
     });
 
     const deserializers = new Map();
@@ -75,7 +75,7 @@ async function startFoxgloveClient(sessionId) {
 
           // Queue graph-related processing instead of direct function calls
           if (["RUNNER_DEFINE", "RUNNER_EVENT"].includes(event.type)) {
-            graphQueueManager.addToQueue(event, sessionId);
+            graphQueueManager.process(event, sessionId);
           }
         })
         .catch((err) =>
@@ -84,7 +84,7 @@ async function startFoxgloveClient(sessionId) {
     });
 
     client.on("error", (err) => {
-      console.error(`[FoxgloveClient] ❌ WebSocket error: ${err.message}`);
+      console.error(`[FoxgloveClient] ❌ WebSocket error for session ${sessionId}: ${err.message}`);
     });
 
     client.on("close", () => {

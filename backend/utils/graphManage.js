@@ -4,18 +4,25 @@ const Event = require("../models/Event");
 const activeGraphs = new Map(); // still exportable
 const graphNumbers = new Map(); // sessionId => graphId
 
-/** Sets the active graph number for a given session ID.
- * @param {string} sessionId - The ID of the session for which to set the active graph key.
- * @param {number} graphNo - The graph number to set as active for the session.
- * This function updates the activeGraphKeys map to associate the session ID with the specified graph number.
- */
-async function updateGraphNumbers(sessionId) {
-  const graphCount = await Graph.countDocuments({ session: sessionId });
-  graphNumbers.set(sessionId, graphCount + 1);
 
-  console.log(`[GraphManager] Updated graph number for session ${sessionId}: ${getGraphNumbers(sessionId)}`);
+async function incrementGraphNumbers(sessionId) {
+  try {
+    const graphCount = await Graph.countDocuments({ session: sessionId });
+    graphNumbers.set(sessionId, graphCount + 1);
+    console.log(`[GraphManager] Updated graph number for session ${sessionId}: ${getGraphNumbers(sessionId)}`);
+  } catch (err) {
+    console.error(`[GraphManager] ❌ Failed to update graph numbers for session ${sessionId}:`, err);
+  }
 }
 
+/** Retrieves the graph number for a given session ID.
+ * @param {string} sessionId - The ID of the session for which to get the
+ * active graph number.
+ * @returns {number|null} The active graph number for the session, or null if no
+ * active graph exists.
+ * This function checks the graphNumbers map for the session ID and returns the associated graph number.
+ * If no graph number is found, it returns null.
+ */
 function getGraphNumbers(sessionId) {
   return graphNumbers.get(sessionId) || null;
 }
@@ -58,25 +65,6 @@ function getActiveGraph(sessionId) {
     const graph = activeGraphs.get(key);
     return graph || null;
   }
-}
-
-/** Sets the active graph for a given session ID. 
- * This function updates the activeGraphs map to associate the session ID with the specified graph.
- * 
- * @param {string} sessionId - The ID of the session for which to set the active graph.
- * @param {Graph} graph - The graph to set as active for the session.
- * @returns {void}
- * 
- * This function retrieves the active graph key for the session and sets the graph in the activeGraphs map.
- * If no active graph key is found, it logs a warning.
- */
-function setActiveGraph(sessionId, graph) {
-  const key = getActiveGraphKey(sessionId);
-  if (!key) {
-    console.warn(`[GraphManager] No active graph key for session ${sessionId}`);
-    return;
-  }
-  activeGraphs.set(key, graph);
 }
 
 /** Generates a graph structure from a list of events. This function processes the events of 
@@ -211,8 +199,17 @@ async function createGraphForSession(sessionId, events) {
 
   const { nodes, edges, eventLog } = generateGraph(events);
 
-  const graphKey = getActiveGraphKey(sessionId);
+  // Skip saving if graph is empty
+  if (!nodes.length && !edges.length && !eventLog.length) {
+    console.warn(`[GraphManager] Skipping empty graph save for session ${sessionId}`);
+    return null;
+  }
+  console.log(`[GraphManager] Creating graph for session ${sessionId} with ${nodes.length} nodes and ${edges.length} edges`);
+
+  await incrementGraphNumbers(sessionId);
+
   const graphNumber = getGraphNumbers(sessionId);
+  const graphKey = getActiveGraphKey(sessionId);
 
   console.log("Graph data for graph:", graphKey);
   console.log("Nodes:", nodes);
@@ -228,11 +225,16 @@ async function createGraphForSession(sessionId, events) {
     eventLog: eventLog,
   });
 
-  await graph.save();
+  try {
+    await graph.save();
+    activeGraphs.set(graphKey, graph);
+    return graph;
 
-  setActiveGraph(sessionId, graph);
+  } catch (err) {
 
-  return graph;
+    console.error(`[GraphManager] ❌ Failed to save graph ${graphKey}:`, err.message);
+    return null;
+  }
 }
 
 /**
@@ -258,8 +260,6 @@ async function finalizeGraphForSession(sessionId) {
   activeGraphs.delete(key);
 
   console.log(`[GraphFinalizer] Finalized graph ${graph.graphId}`);
-
-  updateGraphNumbers(sessionId);
 }
 
 /** Updates the graph with a runner event.
@@ -299,89 +299,89 @@ async function updateGraphWithRunnerEvent(sessionId, event) {
 
   let eventId = graph.eventLog.length;
 
-  if (event.type === "RUNNER_EVENT") {
-    if (!sourceCapability || !sourceProvider || !targetCapability || !targetProvider) {
-      console.warn(`[GraphUpdater] Invalid event data for session ${sessionKey}:`, event);
-      return;
-    }
-
-    if (graph.nodes.some(node => node.capability === sourceCapability && node.provider === sourceProvider)) {
-      sourceNodeID = graph.nodes.find(node => node.capability === sourceCapability && node.provider === sourceProvider).nodeId;
-    } else {
-      console.warn(`[GraphUpdater] Source node not found in graph for session ${sessionKey}`);
-      return;
-    }
-
-    if (graph.nodes.some(node => node.capability === targetCapability && node.provider === targetProvider)) {
-      targetNodeID = graph.nodes.find(node => node.capability === targetCapability && node.provider === targetProvider).nodeId;
-    } else {
-      console.warn(`[GraphUpdater] Target node not found in graph for session ${sessionKey}`);
-      return;
-    }
-
-    if (sourceNodeID !== null || targetNodeID !== null) {
-      edgeID = graph.edges.find(edge => edge.sourceNodeID === sourceNodeID && edge.targetNodeID === targetNodeID)?.edgeId;
-      if (edgeID === undefined) {
-        console.warn(`[GraphUpdater] Edge not found in graph for session ${sessionKey}:`,
-          `sourceNodeID=${sourceNodeID}, targetNodeID=${targetNodeID}`);
-        return;
-      }
-    }
-
-    if (event.event === "STARTED") {
-      // Handle STARTED event logic if needed (parallel execution)
-      sourceState = "executing";
-      targetState = "executing";
-      edgeActivated = true;
-    } else if (event.event === "STOPPED") {
-      // Handle STOPPED event logic if needed (external interruption, target is response kinda recovery)
-      sourceState = "failed";
-      targetState = "executing";
-      edgeActivated = true;
-    } else if (event.event === "FAILED") {
-      // Handle FAILED event logic if needed (failure usually due to an error, target is recovery)
-      sourceState = "failed";
-      targetState = "executing ";
-      edgeActivated = true;
-    } else if (event.event === "SUCCEEDED") {
-      // Handle SUCCEEDED event logic if needed (target is sequential execution)
-      sourceState = "complete";
-      targetState = "executing";
-      edgeActivated = true;
-    } else {
-      // Handle other events or default case
-      console.warn(`[GraphUpdater] Unknown event type for session ${sessionKey}:`, event.event);
-      return;
-    }
-
-    graph.eventLog.push({
-      eventId: eventId,
-      nodeId: sourceNodeID,
-      edgeId: null,
-      nodeState: sourceState,
-      edgeState: false
-    });
-
-    eventId++;
-
-    graph.eventLog.push({
-      eventId: eventId,
-      nodeId: targetNodeID,
-      edgeId: edgeID,
-      nodeState: targetState,
-      edgeState: edgeActivated
-    });
-
-    await graph.save();
-
-    return graph;
+  if (!sourceCapability || !sourceProvider || !targetCapability || !targetProvider) {
+    console.warn(`[GraphUpdater] Invalid event data for session ${sessionId}:`, event);
+    return;
   }
+
+  if (graph.nodes.some(node => node.capability === sourceCapability && node.provider === sourceProvider)) {
+    sourceNodeID = graph.nodes.find(node => node.capability === sourceCapability && node.provider === sourceProvider).nodeId;
+  } else {
+    console.warn(`[GraphUpdater] Source node ${sourceProvider}/${sourceCapability} not found in graph for session ${sessionId}`);
+    return;
+  }
+
+  if (graph.nodes.some(node => node.capability === targetCapability && node.provider === targetProvider)) {
+    targetNodeID = graph.nodes.find(node => node.capability === targetCapability && node.provider === targetProvider).nodeId;
+  } else {
+    console.warn(`[GraphUpdater] Target node ${targetCapability}/${targetProvider} not found in graph for session ${sessionId}`);
+    return;
+  }
+
+  if (sourceNodeID !== null && targetNodeID !== null) {
+    edgeID = graph.edges.find(edge => edge.sourceNodeID === sourceNodeID && edge.targetNodeID === targetNodeID)?.edgeId;
+    if (edgeID === undefined) {
+      console.warn(`[GraphUpdater] Edge not found in graph for session ${sessionId}:`,
+        `sourceNodeID=${sourceNodeID}, targetNodeID=${targetNodeID}`);
+      return;
+    }
+  }
+
+  if (event.event === "STARTED") {
+    // Handle STARTED event logic if needed (parallel execution)
+    sourceState = "executing";
+    targetState = "executing";
+    edgeActivated = true;
+
+  } else if (event.event === "STOPPED") {
+    // Handle STOPPED event logic if needed (external interruption, target is response kinda recovery)
+    sourceState = "failed";
+    targetState = "executing";
+    edgeActivated = true;
+
+  } else if (event.event === "FAILED") {
+    // Handle FAILED event logic if needed (failure usually due to an error, target is recovery)
+    sourceState = "failed";
+    targetState = "executing ";
+    edgeActivated = true;
+
+  } else if (event.event === "SUCCEEDED") {
+    // Handle SUCCEEDED event logic if needed (target is sequential execution)
+    sourceState = "complete";
+    targetState = "executing";
+    edgeActivated = true;
+
+  } else {
+    // Handle other events or default case
+    console.warn(`[GraphUpdater] Unknown event type for session ${sessionId}:`, event.event);
+    return;
+  }
+
+  graph.eventLog.push({
+    eventId: eventId,
+    nodeId: sourceNodeID,
+    edgeId: null,
+    nodeState: sourceState,
+    edgeState: false
+  });
+
+  eventId++;
+
+  graph.eventLog.push({
+    eventId: eventId,
+    nodeId: targetNodeID,
+    edgeId: edgeID,
+    nodeState: targetState,
+    edgeState: edgeActivated
+  });
+
+  await graph.save();
+
+  return graph;
 }
 
 module.exports = {
   createGraphForSession,
   finalizeGraphForSession,
   updateGraphWithRunnerEvent,
-  updateGraphNumbers,
-  getActiveGraphKey,
 };

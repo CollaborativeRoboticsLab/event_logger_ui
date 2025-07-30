@@ -22,7 +22,7 @@ app.use("/api/sessions", sessionRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/graphs", graphRoutes);
 
-mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/capabilities2", {
+mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/event_logger", {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });

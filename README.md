@@ -1,4 +1,4 @@
-# Capabilities2 UI
+# Event Logger UI
 
 A Node.js + React-based web application that connects to [`foxglove-rosbridge`](https://github.com/foxglove/ros-foxglove-bridge) and visualizes `/events` messages published in ROS2 using the CDR encoding format.
 
@@ -9,29 +9,39 @@ This app allows:
 - REST API for historical data access
 
 
-## 🚀 How to Run
-
-### 1. Prerequisites
+## Prerequisites
 
 - Node.js ≥ 18.x
 - MongoDB (running locally or via Atlas)
 - ROS2 Capabilities2 system publishing to `/events` via [foxglove-bridge](https://github.com/foxglove/ros-foxglove-bridge)
 
-### 2. Clone and Setup
+## Clone and Setup
 
 ```bash
-git clone https://github.com/CollaborativeRoboticsLab/capabilities2-ui.git
-cd capabilities2-ui
+git clone https://github.com/CollaborativeRoboticsLab/event_logger_ui.git
+cd event_logger_ui
 ```
 
-### 3. Backend
+## Docker based Deployment
+
+Make sure you have docker installed. Then,
+
+```sh
+docker compose up
+```
+
+## Pure Deployment
+
+### Backend
+
+If you want to modify or start the backend seperately, run following commands
 
 ```bash
 cd backend
 npm install
 
 # Setup MongoDB URI
-echo "MONGO_URI=mongodb://localhost:27017/capabilities2" > .env
+echo "MONGO_URI=mongodb://localhost:27017/event_logger" > .env
 
 # Start the backend (REST API + WebSocket + Foxglove client)
 node server.js
@@ -52,7 +62,9 @@ node server.js
 ```
 
 
-### 4. Frontend
+### Frontend
+
+If you want to modify or start the backend seperately, run following commands
 
 ```bash
 cd ../frontend

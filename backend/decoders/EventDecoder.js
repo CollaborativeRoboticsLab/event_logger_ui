@@ -19,7 +19,7 @@ const TYPE_ENUM_MAP = {
   5: "RUNNER_EVENT",
 };
 
-function decodeCapabilityEvent(data) {
+function decodeEvent(data) {
   const reader = new CdrReader(data);
   try {
     const header = {
@@ -36,13 +36,13 @@ function decodeCapabilityEvent(data) {
       capability: reader.string(),
       provider: reader.string(),
       parameters: reader.string(),
-    };
+    }
 
     const target = {
       capability: reader.string(),
       provider: reader.string(),
       parameters: reader.string(),
-    };
+    }
 
     const thread_id = reader.int8();
 
@@ -69,4 +69,4 @@ function decodeCapabilityEvent(data) {
   }
 }
 
-module.exports = decodeCapabilityEvent;
+module.exports = decodeEvent;

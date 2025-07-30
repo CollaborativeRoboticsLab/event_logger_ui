@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import GraphCanvas from "./GraphCanvas";
 import "./GraphTimelinePlayer.css";
 
@@ -11,6 +11,18 @@ function GraphTimelinePlayer({ graph }) {
     setStep(0);
   }, [graph]);
 
+  const nodeLookup = useMemo(() => {
+    const map = new Map();
+    graph?.nodes?.forEach((n) => map.set(n.nodeId, n));
+    return map;
+  }, [graph]);
+
+  const edgeLookup = useMemo(() => {
+    const map = new Map();
+    graph?.edges?.forEach((e) => map.set(e.edgeId, e));
+    return map;
+  }, [graph]);
+
   useEffect(() => {
     if (!graph) return;
 
@@ -19,7 +31,6 @@ function GraphTimelinePlayer({ graph }) {
 
     const eventLog = graph.eventLog || [];
 
-    // If no timeline, just show idle nodes and basic edges
     if (eventLog.length === 0) {
       const idleNodes = graph.nodes.map((n) => ({
         ...n,
@@ -42,11 +53,11 @@ function GraphTimelinePlayer({ graph }) {
     for (let i = 0; i <= step && i < eventLog.length; i++) {
       const entry = eventLog[i];
 
-      // Handle Node State
+      // Node
       if (entry.nodeId !== null) {
         let node = nodeMap.get(entry.nodeId);
         if (!node) {
-          const orig = graph.nodes.find((n) => n.nodeId === entry.nodeId);
+          const orig = nodeLookup.get(entry.nodeId);
           if (orig) {
             node = {
               ...orig,
@@ -60,11 +71,11 @@ function GraphTimelinePlayer({ graph }) {
         }
       }
 
-      // Handle Edge State
+      // Edge
       if (entry.edgeId !== null) {
         let edge = edgeMap.get(entry.edgeId);
         if (!edge) {
-          const orig = graph.edges.find((e) => e.edgeId === entry.edgeId);
+          const orig = edgeLookup.get(entry.edgeId);
           if (orig) {
             edge = {
               ...orig,
@@ -74,28 +85,32 @@ function GraphTimelinePlayer({ graph }) {
             };
             edgeMap.set(entry.edgeId, edge);
           }
-        } else if (entry.edgeState) {
-          edge.activated += 1;
+        } else {
+          edge.activated = entry.edgeState ? 1 : 0;
         }
       }
     }
 
     setCurrentNodes([...nodeMap.values()]);
     setCurrentEdges([...edgeMap.values()]);
-  }, [graph, step]);
+  }, [graph, step, nodeLookup, edgeLookup]);
 
   if (!graph) return <p>No graph loaded.</p>;
+
+  const totalSteps = graph.eventLog?.length || 0;
 
   return (
     <div className="graph-timeline-container">
       <GraphCanvas nodes={currentNodes} links={currentEdges} />
       <div className="timeline-controls floating-left">
-        <button disabled={step <= 0} onClick={() => setStep(step - 1)}>← Back</button>
+        <button disabled={step <= 0 || totalSteps === 0} onClick={() => setStep(step - 1)}>
+          ← Back
+        </button>
         <span>
-          Step {graph.eventLog.length ? step + 1 : 0} / {graph.eventLog.length}
+          Step {totalSteps ? step + 1 : 0} / {totalSteps}
         </span>
         <button
-          disabled={step >= graph.eventLog.length - 1}
+          disabled={step >= totalSteps - 1 || totalSteps === 0}
           onClick={() => setStep(step + 1)}
         >
           → Forward
