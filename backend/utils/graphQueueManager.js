@@ -64,18 +64,21 @@ async function processQueues(sessionId) {
 		try {
 			if (queue.process_state === "IDLE" && element.type === "RUNNER_DEFINE") {
 				queue.process_state = "DEFINE";
+				console.info(`[QueueProcessor] Starting DEFINE state for session ${sessionId}`);
 
 				// If we are coming from IDLE state and get RUNNER_DEFINE, push the event into define queue
 				queue.define.push(element);
 
 			} else if (queue.process_state === "DEFINE" && element.type === "RUNNER_DEFINE") {
 				queue.process_state = "DEFINE";
+				console.info(`[QueueProcessor] Continuing DEFINE state for session ${sessionId}`);
 
 				// If we are in DEFINE and still getting RUNNER_DEFINE, push the event into define queue
 				queue.define.push(element);
 
 			} else if (queue.process_state === "DEFINE" && element.type === "RUNNER_EVENT") {
 				queue.process_state = "EVENT";
+				console.info(`[QueueProcessor] Transitioning to EVENT state for session ${sessionId}`);
 
 				// If we are in DEFINE state and RUNNER_EVENT are starting, create the graph with define queue
 				const newGraph = await createGraphForSession(sessionId, queue.define);
@@ -96,6 +99,7 @@ async function processQueues(sessionId) {
 
 			} else if (queue.process_state === "EVENT" && element.type === "RUNNER_EVENT") {
 				queue.process_state = "EVENT";
+				console.info(`[QueueProcessor] Continuing EVENT state for session ${sessionId}`);
 
 				// If we are in EVENT state and getting RUNNER_EVENT, update the graph with the event				// update the graph with event
 				const updatedGraph = await updateGraphWithRunnerEvent(sessionId, element);
@@ -106,6 +110,7 @@ async function processQueues(sessionId) {
 
 			} else if (queue.process_state === "EVENT" && element.type === "RUNNER_DEFINE") {
 				queue.process_state = "DEFINE";
+				console.info(`[QueueProcessor] Transitioning to DEFINE state from EVENT for session ${sessionId}`);
 
 				// If we are in EVENT state and getting RUNNER_DEFINE, finalize the graph for the session
 				await finalizeGraphForSession(sessionId);

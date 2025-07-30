@@ -35,12 +35,17 @@ function PastSessionsPage() {
     axios
       .get(`http://localhost:5000/api/graphs/${selectedSession._id}/count`)
       .then((res) => {
-        console.log("Graph count response:", res.data); // Add this
+        console.log("Graph count response:", res.data);
+
         const count = res.data.count;
+
         setGraphs(Array(count).fill(null)); // Placeholder
         setGraphIndex(0);
+
         // Load the first graph
-        fetchGraphByIndex(0, selectedSession._id);
+        if (count > 0) {
+          fetchGraphByIndex(0, selectedSession._id);
+        }
       })
       .catch((err) => console.error("Failed to load graph count", err));
   }, [selectedSession]);
@@ -50,9 +55,11 @@ function PastSessionsPage() {
     axios
       .get(`http://localhost:5000/api/graphs/${sessionId}/${index}`)
       .then((res) => {
+        if (!res.data) return;
         setGraphs((prev) => {
           const updated = [...prev];
           updated[index] = res.data;
+          console.log(`Graph at index ${index} loaded:`, res.data);
           return updated;
         });
       })
@@ -67,7 +74,9 @@ function PastSessionsPage() {
         <ResizablePanel
           topContent={
             <div style={{ position: "relative", height: "100%" }}>
-              {currentGraph ? (
+              {currentGraph === null ? (
+                <p style={{ padding: "1rem" }}>Loading graph...</p>
+              ) : currentGraph ? (
                 <>
                   <GraphTimelinePlayer graph={currentGraph} />
                   <SessionControl

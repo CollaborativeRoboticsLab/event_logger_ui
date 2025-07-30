@@ -40,18 +40,17 @@ router.get("/:sessionId/count", async (req, res) => {
 });
 
 router.get("/:sessionId/:index", async (req, res) => {
-  const { sessionId, index } = req.params;
   try {
-    const graph = await Graph.find({ session: sessionId })
-      .sort({ graphNo: 1 })
-      .skip(Number(index))
-      .limit(1);
+    const { sessionId, index } = req.params;
 
-    if (!graph || graph.length === 0) return res.status(404).json({ message: "Graph not found" });
+    const graph = await Graph.findOne({ session: sessionId, graphNo: parseInt(index) + 1 });
 
-    res.json(graph[0]);
+    if (!graph) return res.status(404).json({ error: "Graph not found" });
+    
+    res.json(graph);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Error fetching graph:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
