@@ -23,13 +23,8 @@ async function incrementGraphNumbers(sessionId) {
  * This function checks the graphNumbers map for the session ID and returns the associated graph number.
  * If no graph number is found, it returns null.
  */
-async function getGraphNumbers(sessionId) {
-  if (!graphNumbers.has(sessionId)) {
-    const graphCount = await Graph.countDocuments({ session: sessionId });
-    graphNumbers.set(sessionId, graphCount + 1);
-  }
-  
-  return graphNumbers.get(sessionId);
+function getGraphNumbers(sessionId) {
+  return graphNumbers.get(sessionId) || null;
 }
 
 /** Generates a unique key for the active graph based on session ID and graph number.
