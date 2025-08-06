@@ -47,8 +47,9 @@ function decodeEvent(data) {
     const thread_id = reader.int8();
 
     const eventNum = reader.uint8();
-    const typeNum = reader.uint8();
+    const event_description = reader.string();
 
+    const typeNum = reader.uint8();
     const content = reader.string();
     const pid = reader.int32();
 
@@ -59,6 +60,7 @@ function decodeEvent(data) {
       target,
       thread_id,
       event: EVENT_ENUM_MAP[eventNum] || "UNDEFINED",
+      event_description,
       type: TYPE_ENUM_MAP[typeNum] || "INFO",
       content,
       pid,
