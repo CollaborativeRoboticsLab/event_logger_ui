@@ -35,6 +35,8 @@ const eventSchema = new mongoose.Schema({
     required: true,
   },
 
+  event_description: String,
+
   type: {
     type: String,
     enum: TYPE_ENUM,
